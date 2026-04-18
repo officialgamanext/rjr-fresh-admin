@@ -1,28 +1,131 @@
-import React from 'react';
-import { Plus, Search, FileText, Download, MoreVertical } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Plus, 
+  Search, 
+  FileText, 
+  Settings, 
+  Trash2, 
+  X, 
+  Loader2 
+} from 'lucide-react';
+import { 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  deleteDoc, 
+  doc, 
+  updateDoc 
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
+import '../css/components/modal.css';
 
 const PriceList = () => {
-  const priceLists = [
-    { title: 'Standard Summer Price List', category: 'Retail', items: 45, lastUpdated: 'Apr 10, 2024', status: 'Active' },
-    { title: 'Wholesale Special B2B', category: 'Wholesale', items: 120, lastUpdated: 'Mar 15, 2024', status: 'Active' },
-    { title: 'Promotional Autumn', category: 'Discount', items: 30, lastUpdated: 'Apr 01, 2024', status: 'Draft' },
-    { title: 'Premium Shop Exclusive', category: 'Premium', items: 15, lastUpdated: 'Feb 20, 2024', status: 'Expired' },
-  ];
+  const navigate = useNavigate();
+  const [priceLists, setPriceLists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingList, setEditingList] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, listId: null });
+
+  const [formData, setFormData] = useState({
+    name: '',
+    description: ''
+  });
+
+  useEffect(() => {
+    const q = query(collection(db, 'priceLists'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const listsData = [];
+      querySnapshot.forEach((doc) => {
+        listsData.push({ id: doc.id, ...doc.data() });
+      });
+      setPriceLists(listsData);
+      setLoading(false);
+    }, (error) => {
+      toast.error("Error loading price lists.");
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleOpenModal = (list = null) => {
+    if (list) {
+      setEditingList(list);
+      setFormData({
+        name: list.name,
+        description: list.description || ''
+      });
+    } else {
+      setEditingList(null);
+      setFormData({
+        name: '',
+        description: ''
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSavePriceList = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const saveToast = toast.loading(editingList ? 'Updating price list...' : 'Creating price list...');
+    try {
+      if (editingList) {
+        await updateDoc(doc(db, 'priceLists', editingList.id), {
+          ...formData,
+          updatedAt: new Date().toISOString()
+        });
+        toast.success('Price list updated successfully!', { id: saveToast });
+      } else {
+        await addDoc(collection(db, 'priceLists'), {
+          ...formData,
+          createdAt: new Date().toISOString()
+        });
+        toast.success('Price list created successfully!', { id: saveToast });
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error("Error saving price list.", { id: saveToast });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePriceList = async () => {
+    const deleteToast = toast.loading('Deleting price list...');
+    try {
+      await deleteDoc(doc(db, 'priceLists', confirmDelete.listId));
+      toast.success('Price list deleted successfully!', { id: deleteToast });
+    } catch (error) {
+      toast.error("Error deleting price list.", { id: deleteToast });
+    }
+  };
 
   return (
     <div className="pricelist-page">
       <div className="page-header">
         <div>
-          <h1>Price Lists</h1>
+          <h1>Price Lists Management</h1>
           <div className="breadcrumb">
             <span>Home</span>
             <span>&gt;</span>
-            <span className="breadcrumb-item active">Price Lists Management</span>
+            <span className="breadcrumb-item active">Price Lists</span>
           </div>
         </div>
-        <button className="btn-primary">
+        <button className="btn-primary" onClick={() => handleOpenModal()}>
           <Plus size={20} />
           Create Price List
         </button>
@@ -31,50 +134,133 @@ const PriceList = () => {
       <div className="card">
         <div className="card-header">
           <h3>All Price Lists</h3>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="mega-menu-btn" style={{ textTransform: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Download size={14} /> Export
-            </button>
-          </div>
         </div>
         <div className="table-responsive">
           <table>
             <thead>
               <tr>
-                <th>TITLE</th>
-                <th>CATEGORY</th>
-                <th>NO. OF ITEMS</th>
-                <th>LAST UPDATED</th>
-                <th>STATUS</th>
-                <th>ACTION</th>
+                <th>LIST NAME</th>
+                <th>DESCRIPTION</th>
+                <th>CREATED DATE</th>
+                <th>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {priceLists.map((list, index) => (
-                <tr key={index}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FileText size={18} color="var(--text-muted)" />
-                      <span style={{ fontWeight: 600 }}>{list.title}</span>
-                    </div>
-                  </td>
-                  <td>{list.category}</td>
-                  <td>{list.items} Items</td>
-                  <td>{list.lastUpdated}</td>
-                  <td>
-                    <span className={`status-badge status-${list.status === 'Active' ? 'success' : list.status === 'Draft' ? 'warning' : 'danger'}`}>
-                      {list.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button><MoreVertical size={16} color="var(--text-muted)" /></button>
+              {loading ? (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>
+                    <Loader2 className="spinner" size={24} />
                   </td>
                 </tr>
-              ))}
+              ) : priceLists.length === 0 ? (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>No price lists found.</td>
+                </tr>
+              ) : (
+                priceLists.map((list) => (
+                  <tr key={list.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileText size={18} color="var(--primary-color)" />
+                        <span style={{ fontWeight: 600 }}>{list.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{list.description || 'No description'}</td>
+                    <td style={{ fontSize: '13px' }}>{new Date(list.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="action-btn-ui" onClick={() => navigate(`/pricelist/${list.id}`)} title="Manage Prices">
+                          <Settings size={18} color="var(--primary-color)" />
+                        </button>
+                        <button className="action-btn-ui" onClick={() => handleOpenModal(list)} title="Edit Info">
+                          <Plus size={18} color="var(--text-secondary)" style={{ transform: 'rotate(45deg)' }} /> 
+                        </button>
+                        <button className="action-btn-ui" onClick={() => setConfirmDelete({ isOpen: true, listId: list.id })} title="Delete">
+                          <Trash2 size={18} color="var(--danger)" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Price List Modal */}
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>{editingList ? 'Edit Price List' : 'Create Price List'}</h2>
+              <button className="close-btn" onClick={() => setIsModalOpen(false)}><X size={24} /></button>
+            </div>
+            <form onSubmit={handleSavePriceList}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>Price List Name</label>
+                  <input 
+                    type="text" 
+                    name="name" 
+                    className="form-control" 
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Standard Summer Rates"
+                    required 
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Description (Optional)</label>
+                  <textarea 
+                    name="description" 
+                    className="form-control" 
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Describe who this list is for"
+                    rows="3"
+                  ></textarea>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn-primary" disabled={saving}>
+                  {saving ? <Loader2 size={18} className="spinner" /> : (editingList ? 'Update List' : 'Create List')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal 
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, listId: null })}
+        onConfirm={handleDeletePriceList}
+        title="Delete Price List"
+        message="Are you sure you want to delete this price list? Shops assigned to this list may lose their custom pricing."
+      />
+
+      <style>{`
+        .action-btn-ui {
+          padding: 6px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+        }
+        .action-btn-ui:hover {
+          background-color: #f1f5f9;
+        }
+        .spinner {
+          animation: rotate 1s linear infinite;
+        }
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
