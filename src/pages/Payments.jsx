@@ -5,10 +5,10 @@ import '../css/components/table.css';
 
 const Payments = () => {
   const payments = [
-    { txId: 'TXN-98234', from: 'Downtown Grocery', amount: '$1,250.00', method: 'Bank Transfer', date: 'Apr 18, 2024, 10:30 AM', status: 'Success' },
-    { txId: 'TXN-98235', from: 'Fresh Mart', amount: '$450.25', method: 'Credit Card', date: 'Apr 17, 2024, 02:45 PM', status: 'Success' },
-    { txId: 'TXN-98236', from: 'Green Valley', amount: '$890.00', method: 'Cash', date: 'Apr 17, 2024, 09:12 AM', status: 'Pending' },
-    { txId: 'TXN-98237', from: 'Nature Choice', amount: '$2,100.00', method: 'Bank Transfer', date: 'Apr 16, 2024, 11:20 AM', status: 'Failed' },
+    { txId: 'TXN-98234', from: 'Downtown Grocery', amount: '₹1,250.00', method: 'Bank Transfer', date: 'Apr 18, 2024, 10:30 AM', status: 'Success' },
+    { txId: 'TXN-98235', from: 'Fresh Mart', amount: '₹450.25', method: 'Credit Card', date: 'Apr 17, 2024, 02:45 PM', status: 'Success' },
+    { txId: 'TXN-98236', from: 'Green Valley', amount: '₹890.00', method: 'Cash', date: 'Apr 17, 2024, 09:12 AM', status: 'Pending' },
+    { txId: 'TXN-98237', from: 'Nature Choice', amount: '₹2,100.00', method: 'Bank Transfer', date: 'Apr 16, 2024, 11:20 AM', status: 'Failed' },
   ];
 
   const getMethodIcon = (method) => {

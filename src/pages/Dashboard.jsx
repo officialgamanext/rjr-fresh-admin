@@ -27,10 +27,10 @@ const StatCard = ({ title, value, icon, trend, trendValue, iconBg }) => (
 
 const Dashboard = () => {
   const recentPayments = [
-    { id: '#321456', user: 'Alexandra Della', email: 'alex.della@outlook.com', amount: '$249.99 USD', date: '2023-04-25, 03:42PM', status: 'Success' },
-    { id: '#987456', user: 'Nancy Elliot', email: 'nancy.elliot@outlook.com', amount: '$120.50 USD', date: '2023-05-20, 12:23PM', status: 'Pending' },
-    { id: '#741258', user: 'Green Cute', email: 'green.cute@outlook.com', amount: '$300.00 USD', date: '2023-01-02, 10:36AM', status: 'Success' },
-    { id: '#321456', user: 'Henry Leach', email: 'henry.leach@outlook.com', amount: '$249.99 USD', date: '2023-04-25, 04:22PM', status: 'Failed' },
+    { id: '#321456', user: 'Alexandra Della', email: 'alex.della@outlook.com', amount: '₹249.99', date: '2023-04-25, 03:42PM', status: 'Success' },
+    { id: '#987456', user: 'Nancy Elliot', email: 'nancy.elliot@outlook.com', amount: '₹120.50', date: '2023-05-20, 12:23PM', status: 'Pending' },
+    { id: '#741258', user: 'Green Cute', email: 'green.cute@outlook.com', amount: '₹300.00', date: '2023-01-02, 10:36AM', status: 'Success' },
+    { id: '#321456', user: 'Henry Leach', email: 'henry.leach@outlook.com', amount: '₹249.99', date: '2023-04-25, 04:22PM', status: 'Failed' },
   ];
 
   return (
@@ -77,7 +77,7 @@ const Dashboard = () => {
         />
         <StatCard 
           title="Total Payments" 
-          value="$12,850" 
+          value="₹12,850" 
           icon={<CreditCard color="#ef4444" />} 
           trend="up" 
           trendValue="15" 

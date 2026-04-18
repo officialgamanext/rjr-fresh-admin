@@ -1,40 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  doc, 
-  getDoc, 
-  updateDoc, 
-  collection, 
-  getDocs, 
-  onSnapshot, 
-  query, 
-  orderBy 
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  getDocs,
+  onSnapshot,
+  query,
+  orderBy
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Phone, 
-  Calendar, 
-  Store, 
-  Clock, 
-  Navigation, 
-  ShoppingCart, 
-  CreditCard, 
-  Info, 
-  Plus, 
-  Search, 
-  X, 
-  Loader2, 
-  Wallet, 
+import {
+  ArrowLeft,
+  MapPin,
+  Phone,
+  Calendar,
+  Store,
+  Clock,
+  Navigation,
+  ShoppingCart,
+  CreditCard,
+  Info,
+  Plus,
+  Search,
+  X,
+  Loader2,
+  Wallet,
   History,
   Tag,
-  DollarSign
+  IndianRupee,
+  ChevronRight,
+  Edit2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
 import '../css/components/modal.css';
+import '../css/pages/shop-details.css';
 
 const ShopDetails = () => {
   const { id } = useParams();
@@ -44,7 +47,7 @@ const ShopDetails = () => {
   const [activeTab, setActiveTab] = useState('details');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+
   const [allPriceLists, setAllPriceLists] = useState([]);
   const [priceListItems, setPriceListItems] = useState([]);
   const [loadingPrices, setLoadingPrices] = useState(false);
@@ -58,14 +61,12 @@ const ShopDetails = () => {
     priceListId: ''
   });
 
-  // Fetch shop details and fetch all price lists for the dropdown
   useEffect(() => {
     const fetchShopAndLists = async () => {
       try {
-        // Shop Details
         const shopRef = doc(db, 'shops', id);
         const shopSnap = await getDoc(shopRef);
-        
+
         if (shopSnap.exists()) {
           const data = shopSnap.data();
           setShop({ id: shopSnap.id, ...data });
@@ -83,7 +84,6 @@ const ShopDetails = () => {
           return;
         }
 
-        // All Price Lists
         const listsSnap = await getDocs(collection(db, 'priceLists'));
         const lists = [];
         listsSnap.forEach(doc => lists.push({ id: doc.id, ...doc.data() }));
@@ -99,7 +99,6 @@ const ShopDetails = () => {
     fetchShopAndLists();
   }, [id, navigate]);
 
-  // Fetch prices if a price list is assigned and Prices tab is active
   useEffect(() => {
     if (activeTab === 'pricing' && shop?.priceListId) {
       setLoadingPrices(true);
@@ -152,73 +151,108 @@ const ShopDetails = () => {
           <button onClick={() => navigate('/shops')} className="back-link">
             <ArrowLeft size={16} /> Back to Shops
           </button>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Store size={28} color="var(--primary-color)" /> {shop.name}
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0, fontSize: '28px' }}>
+            <span className="shop-icon-container">
+              <Store size={26} color="var(--primary-color)" />
+            </span>
+            {shop.name}
           </h1>
         </div>
       </div>
 
-      <div className="tabs-container">
-        <button className={`tab-item ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}><Info size={18} /> Details</button>
-        <button className={`tab-item ${activeTab === 'pricing' ? 'active' : ''}`} onClick={() => setActiveTab('pricing')}><DollarSign size={18} /> Pricing</button>
-        <button className={`tab-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}><ShoppingCart size={18} /> Orders</button>
-        <button className={`tab-item ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}><CreditCard size={18} /> Payments</button>
-        <button className={`tab-item ${activeTab === 'credits' ? 'active' : ''}`} onClick={() => setActiveTab('credits')}><Wallet size={18} /> Credits</button>
-        <button className={`tab-item ${activeTab === 'visits' ? 'active' : ''}`} onClick={() => setActiveTab('visits')}><History size={18} /> Visits</button>
+      <div className="tabs-wrapper">
+        <div className="tabs-container">
+          <button className={`tab-item ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}><Info size={18} /> Details</button>
+          <button className={`tab-item ${activeTab === 'pricing' ? 'active' : ''}`} onClick={() => setActiveTab('pricing')}><IndianRupee size={18} /> Pricing</button>
+          <button className={`tab-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}><ShoppingCart size={18} /> Orders</button>
+          <button className={`tab-item ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}><CreditCard size={18} /> Payments</button>
+          <button className={`tab-item ${activeTab === 'credits' ? 'active' : ''}`} onClick={() => setActiveTab('credits')}><Wallet size={18} /> Credits</button>
+          <button className={`tab-item ${activeTab === 'visits' ? 'active' : ''}`} onClick={() => setActiveTab('visits')}><History size={18} /> Visits</button>
+        </div>
       </div>
 
-      <div className="tab-content">
+      <div className="tab-content" style={{ marginTop: '24px' }}>
         {activeTab === 'details' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
-            <div className="card" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '18px', margin: 0 }}>Shop Information</h3>
-                <button className="btn-primary" onClick={() => setIsModalOpen(true)}>Edit Shop</button>
+          <div className="details-grid">
+            <div className="card main-info-card">
+              <div className="card-top-header">
+                <h3>Shop Information</h3>
+                <button className="btn-primary edit-btn" onClick={() => setIsModalOpen(true)}>
+                  <Edit2 size={16} /> Edit Shop
+                </button>
               </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-                <div>
-                  <label className="detail-label">Contact Details</label>
-                  <div className="detail-item-list">
-                    <div className="detail-item">
-                      <div className="detail-icon" style={{ backgroundColor: 'var(--primary-light)' }}><Phone size={18} color="var(--primary-color)" /></div>
-                      <div><span className="detail-sub">Mobile</span><span className="detail-val">{shop.mobile}</span></div>
+
+              <div className="info-sections">
+                <div className="info-col">
+                  <label className="section-label">Contact Details</label>
+                  <div className="info-item">
+                    <div className="info-icon phone-icon"><Phone size={18} /></div>
+                    <div className="info-text">
+                      <span className="info-label">Mobile Number</span>
+                      <span className="info-value">{shop.mobile}</span>
                     </div>
-                    <div className="detail-item">
-                      <div className="detail-icon" style={{ backgroundColor: 'var(--primary-light)' }}><MapPin size={18} color="var(--primary-color)" /></div>
-                      <div><span className="detail-sub">Address</span><span className="detail-val">{shop.address}</span></div>
+                  </div>
+                  <div className="info-item">
+                    <div className="info-icon map-icon"><MapPin size={18} /></div>
+                    <div className="info-text">
+                      <span className="info-label">Address</span>
+                      <span className="info-value">{shop.address}</span>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="detail-label">Pricing Config</label>
-                  <div className="detail-item">
-                    <div className="detail-icon" style={{ backgroundColor: '#fff7ed' }}><DollarSign size={18} color="#f59e0b" /></div>
-                    <div>
-                      <span className="detail-sub">Assigned Price List</span>
-                      <span className="detail-val" style={{ color: assignedPriceList ? 'var(--text-primary)' : 'var(--danger)' }}>
+                <div className="info-col">
+                  <label className="section-label">Pricing Configuration</label>
+                  <div className="info-item">
+                    <div className="info-icon price-icon"><Tag size={18} /></div>
+                    <div className="info-text">
+                      <span className="info-label">Active Price List</span>
+                      <span className={`info-value ${assignedPriceList ? 'has-plist' : 'no-plist'}`}>
                         {assignedPriceList ? assignedPriceList.name : 'Not Assigned'}
                       </span>
                     </div>
+                    {assignedPriceList && <ChevronRight size={16} className="item-link" onClick={() => navigate(`/pricelist/${assignedPriceList.id}`)} />}
                   </div>
                 </div>
               </div>
 
-              <hr className="divider" />
-              <label className="detail-label">Location & Logs</label>
-              <div style={{ display: 'flex', gap: '40px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={16} color="var(--text-muted)" /> {shop.latitude}, {shop.longitude}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Calendar size={16} color="var(--text-muted)" /> {new Date(shop.createdAt).toLocaleDateString()}</div>
-                <div><span className={`status-badge status-${shop.status === 'Active' ? 'success' : 'danger'}`}>{shop.status}</span></div>
+              <div className="info-footer">
+                <div className="footer-meta">
+                  <div className="meta-item">
+                    <Navigation size={14} />
+                    <span>{shop.latitude}, {shop.longitude}</span>
+                  </div>
+                  <div className="meta-item">
+                    <Calendar size={14} />
+                    <span>Created: {new Date(shop.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className={`status-pill pill-${shop.status.toLowerCase()}`}>
+                  {shop.status}
+                </div>
               </div>
             </div>
 
-            <div className="card" style={{ padding: '24px' }}>
-              <h3 style={{ marginBottom: '20px', fontSize: '18px' }}>Business Stats</h3>
-              <div className="stat-overview-list">
-                <div className="stat-overview-item"><span className="stat-over-label">Orders</span><span className="stat-over-val">0</span></div>
-                <div className="stat-overview-item"><span className="stat-over-label">Revenue</span><span className="stat-over-val">₹0</span></div>
+            <div className="stats-side-col">
+              <div className="card stats-card">
+                <h3>Business Stats</h3>
+                <div className="stat-box">
+                  <div className="stat-inner">
+                    <span className="stat-label">Total Orders</span>
+                    <span className="stat-number">0</span>
+                  </div>
+                  <div className="stat-inner">
+                    <span className="stat-label">Total Revenue</span>
+                    <span className="stat-number">₹0</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card action-summary-card">
+                <h3>Quick Insights</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                  Assigning a price list allows you to manage specific rates for this shop in the Pricing tab.
+                </p>
               </div>
             </div>
           </div>
@@ -227,7 +261,7 @@ const ShopDetails = () => {
         {activeTab === 'pricing' && (
           <div className="card">
             <div className="card-header" style={{ justifyContent: 'space-between' }}>
-              <h3>Price List: {assignedPriceList ? assignedPriceList.name : 'None'}</h3>
+              <h3>{assignedPriceList ? assignedPriceList.name : 'None'}</h3>
               {assignedPriceList && <button className="btn-secondary" onClick={() => navigate(`/pricelist/${assignedPriceList.id}`)}>Manage List</button>}
             </div>
             <div className="table-responsive">
@@ -242,16 +276,16 @@ const ShopDetails = () => {
                 </thead>
                 <tbody>
                   {!shop.priceListId ? (
-                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>No price list assigned. Edit shop details to assign one.</td></tr>
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px' }}>No price list assigned. Please edit the shop details to select one.</td></tr>
                   ) : loadingPrices ? (
                     <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" /></td></tr>
                   ) : priceListItems.length === 0 ? (
-                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>This price list is empty.</td></tr>
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px' }}>This price list is currently empty.</td></tr>
                   ) : (
                     priceListItems.map(item => (
                       <tr key={item.id}>
                         <td style={{ fontWeight: 600 }}>{item.itemName}</td>
-                        <td>{item.itemCategory}</td>
+                        <td><span className="status-badge" style={{ backgroundColor: '#f1f5f9' }}>{item.itemCategory}</span></td>
                         <td>{item.itemUnit}</td>
                         <td style={{ fontWeight: 700, fontSize: '16px' }}>₹{item.price}</td>
                       </tr>
@@ -263,13 +297,20 @@ const ShopDetails = () => {
           </div>
         )}
 
-        {activeTab === 'orders' && <div className="card" style={{ padding: '60px', textAlign: 'center' }}><ShoppingCart size={40} style={{ opacity: 0.2, margin: '0 auto 10px' }} /><p>No orders yet.</p></div>}
-        {activeTab === 'payments' && <div className="card" style={{ padding: '60px', textAlign: 'center' }}><CreditCard size={40} style={{ opacity: 0.2, margin: '0 auto 10px' }} /><p>No payments yet.</p></div>}
-        {activeTab === 'credits' && <div className="card" style={{ padding: '60px', textAlign: 'center' }}><Wallet size={40} style={{ opacity: 0.2, margin: '0 auto 10px' }} /><p>No credits yet.</p></div>}
-        {activeTab === 'visits' && <div className="card" style={{ padding: '60px', textAlign: 'center' }}><History size={40} style={{ opacity: 0.2, margin: '0 auto 10px' }} /><p>No visits yet.</p></div>}
+        {/* Other Tab Placeholders */}
+        {['orders', 'payments', 'credits', 'visits'].includes(activeTab) && (
+          <div className="empty-tab-card">
+            {activeTab === 'orders' && <ShoppingCart size={48} />}
+            {activeTab === 'payments' && <CreditCard size={48} />}
+            {activeTab === 'credits' && <Wallet size={48} />}
+            {activeTab === 'visits' && <History size={48} />}
+            <h3>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Coming Soon</h3>
+            <p>We are still working on this section. Check back soon!</p>
+          </div>
+        )}
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Modal (Keeping existing modal code as it was functional) */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -315,25 +356,6 @@ const ShopDetails = () => {
           </div>
         </div>
       )}
-
-      <style>{`
-        .back-link { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 14px; margin-bottom: 12px; background: none; border: none; cursor: pointer; padding: 0; }
-        .tabs-container { display: flex; gap: 24px; border-bottom: 2px solid var(--border-color); margin-bottom: 24px; overflow-x: auto; }
-        .tab-item { display: flex; align-items: center; gap: 8px; padding: 12px 8px; font-size: 14px; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; position: relative; white-space: nowrap; }
-        .tab-item.active { color: var(--primary-color); }
-        .tab-item.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background-color: var(--primary-color); }
-        .detail-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 12px; }
-        .detail-item { display: flex; alignItems: center; gap: 12px; margin-bottom: 16px; }
-        .detail-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; alignItems: center; justifyContent: center; }
-        .detail-sub { font-size: 12px; color: var(--text-muted); display: block; }
-        .detail-val { font-weight: 600; font-size: 14px; }
-        .divider { margin: 24px 0; border: none; border-top: 1px solid var(--border-color); }
-        .stat-overview-item { padding: 16px; border-radius: 12px; background-color: var(--bg-main); margin-bottom: 12px; }
-        .stat-over-label { font-size: 12px; color: var(--text-muted); display: block; }
-        .stat-over-val { font-size: 22px; font-weight: 800; }
-        .spinner { animation: rotate 1s linear infinite; }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 };
