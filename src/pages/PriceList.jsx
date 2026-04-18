@@ -4,7 +4,8 @@ import {
   Plus, 
   Search, 
   FileText, 
-  Settings, 
+  Eye,
+  Edit,
   Trash2, 
   X, 
   Loader2 
@@ -170,13 +171,13 @@ const PriceList = () => {
                     <td>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button className="action-btn-ui" onClick={() => navigate(`/pricelist/${list.id}`)} title="Manage Prices">
-                          <Settings size={18} color="var(--primary-color)" />
+                          <Eye size={18} color="#64748b" />
                         </button>
                         <button className="action-btn-ui" onClick={() => handleOpenModal(list)} title="Edit Info">
-                          <Plus size={18} color="var(--text-secondary)" style={{ transform: 'rotate(45deg)' }} /> 
+                          <Edit size={18} color="#3b71fe" />
                         </button>
                         <button className="action-btn-ui" onClick={() => setConfirmDelete({ isOpen: true, listId: list.id })} title="Delete">
-                          <Trash2 size={18} color="var(--danger)" />
+                          <Trash2 size={18} color="#ef4444" />
                         </button>
                       </div>
                     </td>

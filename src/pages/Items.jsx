@@ -246,11 +246,11 @@ const Items = () => {
                     <td>{item.hsnCode || 'N/A'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="action-btn-ui" onClick={() => handleOpenModal(item)}>
-                          <Edit size={18} color="var(--primary-color)" />
+                        <button className="action-btn-ui" onClick={() => handleOpenModal(item)} title="Edit">
+                          <Edit size={18} color="#3b71fe" />
                         </button>
-                        <button className="action-btn-ui" onClick={() => setConfirmDelete({ isOpen: true, itemId: item.id })}>
-                          <Trash2 size={18} color="var(--danger)" />
+                        <button className="action-btn-ui" onClick={() => setConfirmDelete({ isOpen: true, itemId: item.id })} title="Delete">
+                          <Trash2 size={18} color="#ef4444" />
                         </button>
                       </div>
                     </td>

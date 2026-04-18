@@ -14,7 +14,7 @@ import {
   Plus, 
   Search, 
   Eye, 
-  Edit2, 
+  Edit, 
   Trash2, 
   X, 
   Loader2, 
@@ -205,14 +205,14 @@ const Customers = () => {
                     <td><span style={{ fontWeight: 500 }}>{customer.mobile}</span></td>
                     <td>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="action-btn-ui view" onClick={() => navigate(`/customers/${customer.id}`)} title="View Detail">
-                          <Eye size={18} color="var(--primary-color)" />
+                        <button className="action-btn-ui" onClick={() => navigate(`/customers/${customer.id}`)} title="View Detail">
+                          <Eye size={18} color="#64748b" />
                         </button>
                         <button className="action-btn-ui" onClick={() => handleOpenModal(customer)} title="Edit">
-                          <Edit2 size={18} color="#64748b" />
+                          <Edit size={18} color="#3b71fe" />
                         </button>
                         <button className="action-btn-ui" onClick={() => handleDeleteClick(customer)} title="Delete">
-                          <Trash2 size={18} color="var(--danger)" />
+                          <Trash2 size={18} color="#ef4444" />
                         </button>
                       </div>
                     </td>
