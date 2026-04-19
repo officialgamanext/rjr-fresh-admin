@@ -15,6 +15,8 @@ import {
   collection,
   getDocs,
   addDoc,
+  updateDoc,
+  doc,
   query,
   where,
   orderBy
@@ -23,7 +25,7 @@ import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 import '../../css/components/order-modal.css';
 
-const OrderModal = ({ isOpen, onClose, shop, categories }) => {
+const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly }) => {
   const [items, setItems] = useState([{
     id: Date.now(),
     categoryId: '',
@@ -51,7 +53,8 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
             where('locationId', '==', shop.locationId)
           );
           const itemsSnap = await getDocs(itemsQuery);
-          setAllInventoryItems(itemsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          const inventory = itemsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setAllInventoryItems(inventory);
 
           // 2. Fetch prices from the shop's price list
           if (shop.priceListId) {
@@ -62,6 +65,41 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
             });
             setPriceMap(pMap);
           }
+
+          // 3. If editing, populate the items
+          if (orderToEdit) {
+            setItems(orderToEdit.items.map(item => {
+              // Find matching category from inventory if not stored (though we should store category in the future)
+              // For now, items in orderData only have itemId. 
+              const invItem = inventory.find(i => i.id === item.itemId);
+              const categoryMatch = categories.find(c => c.name === invItem?.category);
+              
+              return {
+                id: Math.random(), // New unique ID for the row
+                categoryId: categoryMatch?.id || '',
+                itemId: item.itemId,
+                quantity: item.quantity,
+                batchNumber: item.batchNumber || '',
+                price: item.price,
+                subtotal: item.subtotal
+              };
+            }));
+            setDiscount(orderToEdit.discount || 0);
+            setPaymentReceived(orderToEdit.paymentReceived || 0);
+          } else {
+            // Reset for new order
+            setItems([{
+              id: Date.now(),
+              categoryId: '',
+              itemId: '',
+              quantity: 1,
+              batchNumber: '',
+              price: 0,
+              subtotal: 0
+            }]);
+            setDiscount(0);
+            setPaymentReceived(0);
+          }
         } catch (error) {
           console.error("Error loading order data:", error);
           toast.error("Failed to load inventory or prices");
@@ -71,7 +109,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
       };
       fetchData();
     }
-  }, [isOpen, shop]);
+  }, [isOpen, shop, orderToEdit, categories]);
 
   const addRow = () => {
     setItems([...items, {
@@ -126,7 +164,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
     }
 
     setSaving(true);
-    const saveToast = toast.loading("Saving order...");
+    const saveToast = toast.loading(orderToEdit ? "Updating order..." : "Saving order...");
     try {
       const orderData = {
         shopId: shop.id,
@@ -144,12 +182,18 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
         discount: parseFloat(discount) || 0,
         grandTotal,
         paymentReceived: parseFloat(paymentReceived) || 0,
-        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         status: 'Completed'
       };
 
-      await addDoc(collection(db, 'orders'), orderData);
-      toast.success("Order saved successfully", { id: saveToast });
+      if (orderToEdit) {
+        await updateDoc(doc(db, 'orders', orderToEdit.id), orderData);
+        toast.success("Order updated successfully", { id: saveToast });
+      } else {
+        orderData.createdAt = new Date().toISOString();
+        await addDoc(collection(db, 'orders'), orderData);
+        toast.success("Order saved successfully", { id: saveToast });
+      }
       onClose();
     } catch (error) {
       console.error("Error saving order:", error);
@@ -168,8 +212,8 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
           <div className="header-left">
             <ShoppingCart size={24} className="header-icon" />
             <div>
-              <h2>Create New Order</h2>
-              <p>Shop: <strong>{shop.name}</strong> • Price List: <strong>{shop.priceListId ? 'Assigned' : 'None'}</strong></p>
+              <h2>{isViewOnly ? 'Order Details' : (orderToEdit ? 'Edit Order' : 'Create New Order')}</h2>
+              <p>Shop: <strong>{shop.name}</strong> • Order ID: <strong>{orderToEdit ? `#${orderToEdit.id.slice(-6).toUpperCase()}` : 'NEW'}</strong></p>
             </div>
           </div>
           <button className="close-btn" onClick={onClose}><X size={24} /></button>
@@ -183,9 +227,11 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
               <div className="items-section">
                 <div className="section-header">
                   <h3>Order Items</h3>
-                  <button className="btn-secondary add-row-btn" onClick={addRow}>
-                    <Plus size={16} /> Add Another Item
-                  </button>
+                  {!isViewOnly && (
+                    <button className="btn-secondary add-row-btn" onClick={addRow}>
+                      <Plus size={16} /> Add Another Item
+                    </button>
+                  )}
                 </div>
 
                 <div className="items-table-header">
@@ -200,7 +246,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
 
                 <div className="items-rows">
                   {items.map((row) => {
-                    const filteredInventory = row.categoryId 
+                    const filteredInventory = row.categoryId
                       ? allInventoryItems.filter(i => i.category === categories.find(c => c.id === row.categoryId)?.name)
                       : allInventoryItems;
 
@@ -211,6 +257,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
                             className="form-control"
                             value={row.categoryId}
                             onChange={(e) => handleItemChange(row.id, 'categoryId', e.target.value)}
+                            disabled={isViewOnly}
                           >
                             <option value="">Select</option>
                             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -221,6 +268,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
                             className="form-control"
                             value={row.itemId}
                             onChange={(e) => handleItemChange(row.id, 'itemId', e.target.value)}
+                            disabled={isViewOnly}
                           >
                             <option value="">Select Item</option>
                             {filteredInventory.map(i => (
@@ -235,6 +283,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
                             value={row.quantity}
                             onChange={(e) => handleItemChange(row.id, 'quantity', e.target.value)}
                             min="1"
+                            disabled={isViewOnly}
                           />
                         </div>
                         <div>
@@ -244,6 +293,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
                             placeholder="Batch"
                             value={row.batchNumber}
                             onChange={(e) => handleItemChange(row.id, 'batchNumber', e.target.value)}
+                            disabled={isViewOnly}
                           />
                         </div>
                         <div style={{ textAlign: 'right' }}>
@@ -253,9 +303,11 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
                           <div className="subtotal-display">₹{row.subtotal.toFixed(2)}</div>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <button className="row-delete-btn" onClick={() => removeRow(row.id)}>
-                            <Trash2 size={16} />
-                          </button>
+                          {!isViewOnly && (
+                            <button className="row-delete-btn" onClick={() => removeRow(row.id)}>
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -278,6 +330,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
                         value={discount}
                         onChange={(e) => setDiscount(e.target.value)}
                         placeholder="0.00"
+                        disabled={isViewOnly}
                       />
                     </div>
                   </div>
@@ -295,6 +348,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
                         value={paymentReceived}
                         onChange={(e) => setPaymentReceived(e.target.value)}
                         placeholder="0.00"
+                        disabled={isViewOnly}
                       />
                     </div>
                   </div>
@@ -305,14 +359,15 @@ const OrderModal = ({ isOpen, onClose, shop, categories }) => {
         </div>
 
         <div className="order-modal-footer">
-          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
-          <button className="btn-primary save-order-btn" onClick={handleSaveOrder} disabled={saving || loading}>
-            {saving ? <Loader2 className="spinner" size={18} /> : <Save size={18} />}
-            <span>Save Order</span>
-          </button>
+          <button className="btn-secondary" onClick={onClose} disabled={saving}>{isViewOnly ? 'Close' : 'Cancel'}</button>
+          {!isViewOnly && (
+            <button className="btn-primary save-order-btn" onClick={handleSaveOrder} disabled={saving || loading}>
+              {saving ? <Loader2 className="spinner" size={18} /> : <Save size={18} />}
+              <span>Save Order</span>
+            </button>
+          )}
         </div>
       </div>
-
     </div>
   );
 };

@@ -9,7 +9,8 @@ import {
   onSnapshot,
   query,
   orderBy,
-  where
+  where,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import {
@@ -32,7 +33,10 @@ import {
   Tag,
   IndianRupee,
   ChevronRight,
-  Edit2
+  Edit2,
+  Edit,
+  Trash2,
+  Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import '../css/pages/dashboard.css';
@@ -56,6 +60,8 @@ const ShopDetails = () => {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [isViewOnly, setIsViewOnly] = useState(false);
   const [categories, setCategories] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -149,6 +155,18 @@ const ShopDetails = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  const handleDeleteOrder = async (orderId) => {
+    if (window.confirm("Are you sure you want to delete this order?")) {
+      const deleteToast = toast.loading('Deleting order...');
+      try {
+        await deleteDoc(doc(db, 'orders', orderId));
+        toast.success('Order deleted successfully!', { id: deleteToast });
+      } catch (error) {
+        toast.error("Error deleting order.", { id: deleteToast });
+      }
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -348,10 +366,12 @@ const ShopDetails = () => {
                   <tr>
                     <th>ORDER ID</th>
                     <th>DATE</th>
-                    <th>ITEMS</th>
+                    <th>SUBTOTAL</th>
+                    <th>DISCOUNT</th>
                     <th>GRAND TOTAL</th>
-                    <th>PAYMENT</th>
+                    <th>PAID</th>
                     <th>STATUS</th>
+                    <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -364,15 +384,31 @@ const ShopDetails = () => {
                       <tr key={order.id}>
                         <td style={{ fontWeight: 600 }}>#{order.id.slice(-6).toUpperCase()}</td>
                         <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                        <td>{order.items?.length || 0} Items</td>
-                        <td style={{ fontWeight: 700 }}>₹{order.grandTotal}</td>
+                        <td style={{ fontWeight: 600 }}>₹{order.totalSubtotal || 0}</td>
+                        <td style={{ color: 'var(--danger)' }}>-₹{order.discount || 0}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--primary-color)' }}>₹{order.grandTotal}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--success)' }}>₹{order.paymentReceived || 0}</td>
                         <td>
-                          <span className={`status-badge ${order.paymentReceived >= order.grandTotal ? 'status-success' : 'status-warning'}`}>
-                            ₹{order.paymentReceived || 0}
-                          </span>
+                          {(() => {
+                            const paid = order.paymentReceived || 0;
+                            const total = order.grandTotal;
+                            if (paid === 0) return <span className="status-badge status-danger">Unpaid</span>;
+                            if (paid < total) return <span className="status-badge status-warning">Partial</span>;
+                            return <span className="status-badge status-success">Paid</span>;
+                          })()}
                         </td>
                         <td>
-                          <span className="status-badge status-success">Completed</span>
+                          <div style={{ display: 'flex', gap: '15px' }}>
+                            <button className="action-btn-ui" onClick={() => { setEditingOrder(order); setIsViewOnly(true); setIsOrderModalOpen(true); }} title="View">
+                              <Eye size={16} color="var(--primary-color)" />
+                            </button>
+                            <button className="action-btn-ui" onClick={() => { setEditingOrder(order); setIsViewOnly(false); setIsOrderModalOpen(true); }} title="Edit">
+                              <Edit size={16} color="var(--warning)" />
+                            </button>
+                            <button className="action-btn-ui" onClick={() => handleDeleteOrder(order.id)} title="Delete">
+                              <Trash2 size={16} color="var(--danger)" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -445,9 +481,15 @@ const ShopDetails = () => {
       {/* Order Modal */}
       <OrderModal 
         isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
+        onClose={() => {
+          setIsOrderModalOpen(false);
+          setEditingOrder(null);
+          setIsViewOnly(false);
+        }}
         shop={shop}
         categories={categories}
+        orderToEdit={editingOrder}
+        isViewOnly={isViewOnly}
       />
     </div>
   );
