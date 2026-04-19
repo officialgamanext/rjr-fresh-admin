@@ -7,9 +7,11 @@ import {
   setDoc, 
   deleteDoc, 
   query, 
-  orderBy 
+  orderBy,
+  where
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useLocation } from '../contexts/LocationContext';
 import { 
   Plus, 
   Search, 
@@ -31,6 +33,7 @@ import '../css/components/modal.css';
 
 const Customers = () => {
   const navigate = useNavigate();
+  const { selectedLocation, locations } = useLocation();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,19 +46,32 @@ const Customers = () => {
     name: '',
     mobile: '',
     email: '',
-    address: ''
+    address: '',
+    locationId: ''
   });
 
   useEffect(() => {
-    const q = query(collection(db, 'customers'), orderBy('name', 'asc'));
+    setLoading(true);
+    let q;
+    if (selectedLocation === 'all') {
+      q = query(collection(db, 'customers'), orderBy('name', 'asc'));
+    } else {
+      q = query(collection(db, 'customers'), where('locationId', '==', selectedLocation));
+    }
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const customerData = [];
       snapshot.forEach((doc) => customerData.push({ id: doc.id, ...doc.data() }));
+      
+      if (selectedLocation !== 'all') {
+        customerData.sort((a, b) => a.name.localeCompare(b.name));
+      }
+      
       setCustomers(customerData);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedLocation]);
 
   const generateCustomerId = () => {
     const now = new Date();
@@ -74,7 +90,8 @@ const Customers = () => {
         name: customer.name,
         mobile: customer.mobile,
         email: customer.email || '',
-        address: customer.address
+        address: customer.address,
+        locationId: customer.locationId || ''
       });
       setSelectedCustomer(customer);
     } else {
@@ -82,7 +99,8 @@ const Customers = () => {
         name: '',
         mobile: '',
         email: '',
-        address: ''
+        address: '',
+        locationId: selectedLocation !== 'all' ? selectedLocation : ''
       });
       setSelectedCustomer(null);
     }
@@ -233,6 +251,21 @@ const Customers = () => {
             </div>
             <form onSubmit={handleSaveCustomer}>
               <div className="modal-body">
+                <div className="form-group">
+                  <label>Location</label>
+                  <select 
+                    name="locationId" 
+                    className="form-control" 
+                    value={formData.locationId}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select Location</option>
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.id}>{loc.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="form-group">
                   <label>Customer Name</label>
                   <div className="input-with-icon">

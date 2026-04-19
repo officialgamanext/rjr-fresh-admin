@@ -18,9 +18,11 @@ import {
   orderBy, 
   deleteDoc, 
   doc, 
-  updateDoc 
+  updateDoc,
+  where
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useLocation } from '../contexts/LocationContext';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import '../css/pages/dashboard.css';
@@ -29,6 +31,7 @@ import '../css/components/modal.css';
 
 const Shops = () => {
   const navigate = useNavigate();
+  const { selectedLocation, locations } = useLocation();
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,27 +46,44 @@ const Shops = () => {
     latitude: '',
     longitude: '',
     mobile: '',
-    address: ''
+    address: '',
+    locationId: '',
+    status: 'Active'
   });
 
   // Fetch shops from Firebase
   useEffect(() => {
-    const q = query(collection(db, 'shops'), orderBy('name', 'asc'));
+    setLoading(true);
+    let q;
+    if (selectedLocation === 'all') {
+      q = query(collection(db, 'shops'), orderBy('name', 'asc'));
+    } else {
+      // Filtering and ordering on different fields requires a composite index.
+      // We'll filter by location and sort locally to avoid index errors for now.
+      q = query(collection(db, 'shops'), where('locationId', '==', selectedLocation));
+    }
+    
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const shopsData = [];
       querySnapshot.forEach((doc) => {
         shopsData.push({ id: doc.id, ...doc.data() });
       });
+      
+      // Local sort if we didn't use Firestore orderBy
+      if (selectedLocation !== 'all') {
+        shopsData.sort((a, b) => a.name.localeCompare(b.name));
+      }
+      
       setShops(shopsData);
       setLoading(false);
     }, (error) => {
       console.error("Firestore error:", error);
-      toast.error("Error loading shops. Access denied.");
+      toast.error("Error loading shops.");
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [selectedLocation]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -78,7 +98,9 @@ const Shops = () => {
         latitude: shop.latitude,
         longitude: shop.longitude,
         mobile: shop.mobile,
-        address: shop.address
+        address: shop.address,
+        locationId: shop.locationId || '',
+        status: shop.status || 'Active'
       });
     } else {
       setEditingShop(null);
@@ -87,7 +109,9 @@ const Shops = () => {
         latitude: '',
         longitude: '',
         mobile: '',
-        address: ''
+        address: '',
+        locationId: selectedLocation !== 'all' ? selectedLocation : '',
+        status: 'Active'
       });
     }
     setIsModalOpen(true);
@@ -113,8 +137,7 @@ const Shops = () => {
       } else {
         await addDoc(collection(db, 'shops'), {
           ...formData,
-          createdAt: new Date().toISOString(),
-          status: 'Active'
+          createdAt: new Date().toISOString()
         });
         toast.success('Shop added successfully!', { id: saveToast });
       }
@@ -182,6 +205,7 @@ const Shops = () => {
             <thead>
               <tr>
                 <th>SHOP NAME</th>
+                <th>LOCATION</th>
                 <th>MOBILE</th>
                 <th>LATITUDE</th>
                 <th>LONGITUDE</th>
@@ -192,7 +216,7 @@ const Shops = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
                       <Loader2 size={20} className="spinner" /> Loading shops...
                     </div>
@@ -200,7 +224,7 @@ const Shops = () => {
                 </tr>
               ) : shops.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>No shops found. Click "Add New Shop" to create one.</td>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>No shops found. Click "Add New Shop" to create one.</td>
                 </tr>
               ) : (
                 shops.map((shop) => (
@@ -209,6 +233,11 @@ const Shops = () => {
                       <div className="info-name">{shop.name}</div>
                       <div className="info-sub" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {shop.address}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="status-badge" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary-color)', fontWeight: 600 }}>
+                        {locations.find(l => l.id === shop.locationId)?.name || 'N/A'}
                       </div>
                     </td>
                     <td>{shop.mobile}</td>
@@ -250,6 +279,34 @@ const Shops = () => {
             </div>
             <form onSubmit={handleSaveShop}>
               <div className="modal-body">
+                <div className="form-group">
+                  <label>Location</label>
+                  <select 
+                    name="locationId" 
+                    className="form-control" 
+                    value={formData.locationId}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select Location</option>
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.id}>{loc.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Status</label>
+                  <select 
+                    name="status" 
+                    className="form-control" 
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
                 <div className="form-group">
                   <label>Shop Name</label>
                   <input 

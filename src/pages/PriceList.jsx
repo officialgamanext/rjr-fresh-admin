@@ -18,9 +18,11 @@ import {
   orderBy, 
   deleteDoc, 
   doc, 
-  updateDoc 
+  updateDoc,
+  where
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useLocation } from '../contexts/LocationContext';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import '../css/pages/dashboard.css';
@@ -29,6 +31,7 @@ import '../css/components/modal.css';
 
 const PriceList = () => {
   const navigate = useNavigate();
+  const { selectedLocation, locations } = useLocation();
   const [priceLists, setPriceLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,16 +41,29 @@ const PriceList = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    description: ''
+    description: '',
+    locationId: ''
   });
 
   useEffect(() => {
-    const q = query(collection(db, 'priceLists'), orderBy('name', 'asc'));
+    setLoading(true);
+    let q;
+    if (selectedLocation === 'all') {
+      q = query(collection(db, 'priceLists'), orderBy('name', 'asc'));
+    } else {
+      q = query(collection(db, 'priceLists'), where('locationId', '==', selectedLocation));
+    }
+
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const listsData = [];
       querySnapshot.forEach((doc) => {
         listsData.push({ id: doc.id, ...doc.data() });
       });
+      
+      if (selectedLocation !== 'all') {
+        listsData.sort((a, b) => a.name.localeCompare(b.name));
+      }
+      
       setPriceLists(listsData);
       setLoading(false);
     }, (error) => {
@@ -55,7 +71,7 @@ const PriceList = () => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedLocation]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -67,13 +83,15 @@ const PriceList = () => {
       setEditingList(list);
       setFormData({
         name: list.name,
-        description: list.description || ''
+        description: list.description || '',
+        locationId: list.locationId || ''
       });
     } else {
       setEditingList(null);
       setFormData({
         name: '',
-        description: ''
+        description: '',
+        locationId: selectedLocation !== 'all' ? selectedLocation : ''
       });
     }
     setIsModalOpen(true);
@@ -199,6 +217,21 @@ const PriceList = () => {
             </div>
             <form onSubmit={handleSavePriceList}>
               <div className="modal-body">
+                <div className="form-group">
+                  <label>Location</label>
+                  <select 
+                    name="locationId" 
+                    className="form-control" 
+                    value={formData.locationId}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select Location</option>
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.id}>{loc.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="form-group">
                   <label>Price List Name</label>
                   <input 

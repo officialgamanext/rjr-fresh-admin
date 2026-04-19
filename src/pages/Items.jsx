@@ -18,9 +18,11 @@ import {
   orderBy, 
   deleteDoc, 
   doc, 
-  updateDoc 
+  updateDoc,
+  where
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useLocation } from '../contexts/LocationContext';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import '../css/pages/dashboard.css';
@@ -28,6 +30,7 @@ import '../css/components/table.css';
 import '../css/components/modal.css';
 
 const Items = () => {
+  const { selectedLocation, locations } = useLocation();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +46,8 @@ const Items = () => {
     name: '',
     category: '',
     unit: 'kg',
-    hsnCode: ''
+    hsnCode: '',
+    locationId: ''
   });
 
   const [categoryData, setCategoryData] = useState({
@@ -53,12 +57,24 @@ const Items = () => {
 
   // Fetch items
   useEffect(() => {
-    const q = query(collection(db, 'items'), orderBy('name', 'asc'));
+    setLoading(true);
+    let q;
+    if (selectedLocation === 'all') {
+      q = query(collection(db, 'items'), orderBy('name', 'asc'));
+    } else {
+      q = query(collection(db, 'items'), where('locationId', '==', selectedLocation));
+    }
+
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const itemsData = [];
       querySnapshot.forEach((doc) => {
         itemsData.push({ id: doc.id, ...doc.data() });
       });
+      
+      if (selectedLocation !== 'all') {
+        itemsData.sort((a, b) => a.name.localeCompare(b.name));
+      }
+      
       setItems(itemsData);
       setLoading(false);
     }, (error) => {
@@ -66,7 +82,7 @@ const Items = () => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [selectedLocation]);
 
   // Fetch categories
   useEffect(() => {
@@ -98,7 +114,8 @@ const Items = () => {
         name: item.name,
         category: item.category,
         unit: item.unit,
-        hsnCode: item.hsnCode || ''
+        hsnCode: item.hsnCode || '',
+        locationId: item.locationId || ''
       });
     } else {
       setEditingItem(null);
@@ -106,7 +123,8 @@ const Items = () => {
         name: '',
         category: categories.length > 0 ? categories[0].name : '',
         unit: 'kg',
-        hsnCode: ''
+        hsnCode: '',
+        locationId: selectedLocation !== 'all' ? selectedLocation : ''
       });
     }
     setIsModalOpen(true);
@@ -116,6 +134,10 @@ const Items = () => {
     e.preventDefault();
     if (!formData.category) {
       toast.error("Please select a category first.");
+      return;
+    }
+    if (!formData.locationId) {
+      toast.error("Please select a location.");
       return;
     }
     setSaving(true);
@@ -272,6 +294,21 @@ const Items = () => {
             </div>
             <form onSubmit={handleSaveItem}>
               <div className="modal-body">
+                <div className="form-group">
+                  <label>Location</label>
+                  <select 
+                    name="locationId" 
+                    className="form-control" 
+                    value={formData.locationId}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select Location</option>
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.id}>{loc.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="form-group">
                   <label>Item Name</label>
                   <input 
