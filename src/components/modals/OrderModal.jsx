@@ -1,0 +1,320 @@
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Plus,
+  Trash2,
+  Loader2,
+  IndianRupee,
+  ShoppingCart,
+  Tag,
+  Hash,
+  Layers,
+  Save
+} from 'lucide-react';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  orderBy
+} from 'firebase/firestore';
+import { db } from '../../firebase';
+import toast from 'react-hot-toast';
+import '../../css/components/order-modal.css';
+
+const OrderModal = ({ isOpen, onClose, shop, categories }) => {
+  const [items, setItems] = useState([{
+    id: Date.now(),
+    categoryId: '',
+    itemId: '',
+    quantity: 1,
+    batchNumber: '',
+    price: 0,
+    subtotal: 0
+  }]);
+  const [allInventoryItems, setAllInventoryItems] = useState([]);
+  const [priceMap, setPriceMap] = useState({}); // { itemId: price }
+  const [discount, setDiscount] = useState(0);
+  const [paymentReceived, setPaymentReceived] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && shop) {
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          // 1. Fetch items for this location
+          const itemsQuery = query(
+            collection(db, 'items'),
+            where('locationId', '==', shop.locationId)
+          );
+          const itemsSnap = await getDocs(itemsQuery);
+          setAllInventoryItems(itemsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+          // 2. Fetch prices from the shop's price list
+          if (shop.priceListId) {
+            const pricesSnap = await getDocs(collection(db, `priceLists/${shop.priceListId}/items`));
+            const pMap = {};
+            pricesSnap.forEach(doc => {
+              pMap[doc.id] = doc.data().price;
+            });
+            setPriceMap(pMap);
+          }
+        } catch (error) {
+          console.error("Error loading order data:", error);
+          toast.error("Failed to load inventory or prices");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }
+  }, [isOpen, shop]);
+
+  const addRow = () => {
+    setItems([...items, {
+      id: Date.now(),
+      categoryId: '',
+      itemId: '',
+      quantity: 1,
+      batchNumber: '',
+      price: 0,
+      subtotal: 0
+    }]);
+  };
+
+  const removeRow = (id) => {
+    if (items.length > 1) {
+      setItems(items.filter(item => item.id !== id));
+    }
+  };
+
+  const handleItemChange = (id, field, value) => {
+    const updatedItems = items.map(item => {
+      if (item.id === id) {
+        const newItem = { ...item, [field]: value };
+
+        if (field === 'itemId') {
+          newItem.price = priceMap[value] || 0;
+          newItem.subtotal = newItem.price * newItem.quantity;
+        } else if (field === 'quantity') {
+          newItem.subtotal = newItem.price * (parseFloat(value) || 0);
+        } else if (field === 'categoryId') {
+          // Reset itemId if category changes
+          newItem.itemId = '';
+          newItem.price = 0;
+          newItem.subtotal = 0;
+        }
+
+        return newItem;
+      }
+      return item;
+    });
+    setItems(updatedItems);
+  };
+
+  const totalSubtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
+  const grandTotal = Math.max(0, totalSubtotal - (parseFloat(discount) || 0));
+
+  const handleSaveOrder = async () => {
+    // Validations
+    if (items.some(item => !item.itemId || item.quantity <= 0)) {
+      toast.error("Please fill all item details correctly");
+      return;
+    }
+
+    setSaving(true);
+    const saveToast = toast.loading("Saving order...");
+    try {
+      const orderData = {
+        shopId: shop.id,
+        shopName: shop.name,
+        locationId: shop.locationId,
+        items: items.map(item => ({
+          itemId: item.itemId,
+          itemName: allInventoryItems.find(i => i.id === item.itemId)?.name,
+          quantity: item.quantity,
+          price: item.price,
+          subtotal: item.subtotal,
+          batchNumber: item.batchNumber
+        })),
+        totalSubtotal,
+        discount: parseFloat(discount) || 0,
+        grandTotal,
+        paymentReceived: parseFloat(paymentReceived) || 0,
+        createdAt: new Date().toISOString(),
+        status: 'Completed'
+      };
+
+      await addDoc(collection(db, 'orders'), orderData);
+      toast.success("Order saved successfully", { id: saveToast });
+      onClose();
+    } catch (error) {
+      console.error("Error saving order:", error);
+      toast.error("Failed to save order", { id: saveToast });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="order-modal-overlay">
+      <div className="order-modal-container">
+        <div className="order-modal-header">
+          <div className="header-left">
+            <ShoppingCart size={24} className="header-icon" />
+            <div>
+              <h2>Create New Order</h2>
+              <p>Shop: <strong>{shop.name}</strong> • Price List: <strong>{shop.priceListId ? 'Assigned' : 'None'}</strong></p>
+            </div>
+          </div>
+          <button className="close-btn" onClick={onClose}><X size={24} /></button>
+        </div>
+
+        <div className="order-modal-body">
+          {loading ? (
+            <div className="modal-loader"><Loader2 size={32} className="spinner" /> Loading Data...</div>
+          ) : (
+            <>
+              <div className="items-section">
+                <div className="section-header">
+                  <h3>Order Items</h3>
+                  <button className="btn-secondary add-row-btn" onClick={addRow}>
+                    <Plus size={16} /> Add Another Item
+                  </button>
+                </div>
+
+                <div className="items-table-header">
+                  <div>CATEGORY</div>
+                  <div>ITEM</div>
+                  <div>QTY</div>
+                  <div>BATCH #</div>
+                  <div style={{ textAlign: 'right' }}>PRICE</div>
+                  <div style={{ textAlign: 'right' }}>SUBTOTAL</div>
+                  <div></div>
+                </div>
+
+                <div className="items-rows">
+                  {items.map((row) => {
+                    const filteredInventory = row.categoryId 
+                      ? allInventoryItems.filter(i => i.category === categories.find(c => c.id === row.categoryId)?.name)
+                      : allInventoryItems;
+
+                    return (
+                      <div key={row.id} className="item-row">
+                        <div>
+                          <select
+                            className="form-control"
+                            value={row.categoryId}
+                            onChange={(e) => handleItemChange(row.id, 'categoryId', e.target.value)}
+                          >
+                            <option value="">Select</option>
+                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <select
+                            className="form-control"
+                            value={row.itemId}
+                            onChange={(e) => handleItemChange(row.id, 'itemId', e.target.value)}
+                          >
+                            <option value="">Select Item</option>
+                            {filteredInventory.map(i => (
+                              <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={row.quantity}
+                            onChange={(e) => handleItemChange(row.id, 'quantity', e.target.value)}
+                            min="1"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Batch"
+                            value={row.batchNumber}
+                            onChange={(e) => handleItemChange(row.id, 'batchNumber', e.target.value)}
+                          />
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div className="price-display">₹{row.price}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div className="subtotal-display">₹{row.subtotal.toFixed(2)}</div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <button className="row-delete-btn" onClick={() => removeRow(row.id)}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="order-summary-section">
+                <div className="summary-card">
+                  <div className="summary-row">
+                    <span>Total Subtotal</span>
+                    <span className="value">₹{totalSubtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Discount Amount</span>
+                    <div className="input-with-icon">
+                      <IndianRupee size={14} />
+                      <input
+                        type="number"
+                        value={discount}
+                        onChange={(e) => setDiscount(e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div className="summary-row grand-total">
+                    <span>Grand Total</span>
+                    <span className="value">₹{grandTotal.toFixed(2)}</span>
+                  </div>
+                  <hr />
+                  <div className="summary-row payment">
+                    <span>Payment Received</span>
+                    <div className="input-with-icon">
+                      <IndianRupee size={14} />
+                      <input
+                        type="number"
+                        value={paymentReceived}
+                        onChange={(e) => setPaymentReceived(e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="order-modal-footer">
+          <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancel</button>
+          <button className="btn-primary save-order-btn" onClick={handleSaveOrder} disabled={saving || loading}>
+            {saving ? <Loader2 className="spinner" size={18} /> : <Save size={18} />}
+            <span>Save Order</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+export default OrderModal;

@@ -8,7 +8,8 @@ import {
   getDocs,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  where
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import {
@@ -38,6 +39,7 @@ import '../css/pages/dashboard.css';
 import '../css/components/table.css';
 import '../css/components/modal.css';
 import '../css/pages/shop-details.css';
+import OrderModal from '../components/modals/OrderModal';
 
 const ShopDetails = () => {
   const { id } = useParams();
@@ -51,6 +53,10 @@ const ShopDetails = () => {
   const [allPriceLists, setAllPriceLists] = useState([]);
   const [priceListItems, setPriceListItems] = useState([]);
   const [loadingPrices, setLoadingPrices] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -112,6 +118,37 @@ const ShopDetails = () => {
       return () => unsubscribe();
     }
   }, [activeTab, shop?.priceListId]);
+
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      setLoadingOrders(true);
+      const q = query(
+        collection(db, 'orders'), 
+        where('shopId', '==', id)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Sort locally by createdAt desc
+        ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setOrders(ordersData);
+        setLoadingOrders(false);
+      }, (error) => {
+        console.error("Firestore error:", error);
+        setLoadingOrders(false);
+        toast.error("Failed to load orders.");
+      });
+      return () => unsubscribe();
+    }
+  }, [activeTab, id]);
+
+  useEffect(() => {
+    // Fetch categories for the order modal
+    const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -297,10 +334,58 @@ const ShopDetails = () => {
           </div>
         )}
 
+        {activeTab === 'orders' && (
+          <div className="card">
+            <div className="card-header" style={{ justifyContent: 'space-between' }}>
+              <h3>Order History</h3>
+              <button className="btn-primary" onClick={() => setIsOrderModalOpen(true)}>
+                <Plus size={18} /> New Order
+              </button>
+            </div>
+            <div className="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ORDER ID</th>
+                    <th>DATE</th>
+                    <th>ITEMS</th>
+                    <th>GRAND TOTAL</th>
+                    <th>PAYMENT</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingOrders ? (
+                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" /></td></tr>
+                  ) : orders.length === 0 ? (
+                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '60px' }}>No orders found for this shop.</td></tr>
+                  ) : (
+                    orders.map(order => (
+                      <tr key={order.id}>
+                        <td style={{ fontWeight: 600 }}>#{order.id.slice(-6).toUpperCase()}</td>
+                        <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td>{order.items?.length || 0} Items</td>
+                        <td style={{ fontWeight: 700 }}>₹{order.grandTotal}</td>
+                        <td>
+                          <span className={`status-badge ${order.paymentReceived >= order.grandTotal ? 'status-success' : 'status-warning'}`}>
+                            ₹{order.paymentReceived || 0}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="status-badge status-success">Completed</span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Other Tab Placeholders */}
-        {['orders', 'payments', 'credits', 'visits'].includes(activeTab) && (
+        {['payments', 'credits', 'visits'].includes(activeTab) && (
           <div className="empty-tab-card">
-            {activeTab === 'orders' && <ShoppingCart size={48} />}
             {activeTab === 'payments' && <CreditCard size={48} />}
             {activeTab === 'credits' && <Wallet size={48} />}
             {activeTab === 'visits' && <History size={48} />}
@@ -356,6 +441,14 @@ const ShopDetails = () => {
           </div>
         </div>
       )}
+
+      {/* Order Modal */}
+      <OrderModal 
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        shop={shop}
+        categories={categories}
+      />
     </div>
   );
 };
