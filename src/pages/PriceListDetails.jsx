@@ -9,7 +9,8 @@ import {
   deleteDoc, 
   writeBatch,
   query, 
-  orderBy 
+  orderBy,
+  where
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { 
@@ -45,17 +46,35 @@ const PriceListDetails = () => {
     const fetchData = async () => {
       try {
         const listDoc = await getDoc(doc(db, 'priceLists', id));
-        if (listDoc.exists()) {
-          setListInfo(listDoc.data());
-        } else {
+        if (!listDoc.exists()) {
           toast.error("Price list not found");
           navigate('/pricelist');
           return;
         }
 
-        const itemsSnap = await getDocs(query(collection(db, 'items'), orderBy('name', 'asc')));
+        const listData = listDoc.data();
+        setListInfo(listData);
+
+        // Fetch only items that belong to the same location as this price list
+        let itemsQuery;
+        if (listData.locationId && listData.locationId !== 'all') {
+          itemsQuery = query(
+            collection(db, 'items'), 
+            where('locationId', '==', listData.locationId)
+          );
+        } else {
+          itemsQuery = query(collection(db, 'items'), orderBy('name', 'asc'));
+        }
+
+        const itemsSnap = await getDocs(itemsQuery);
         const items = [];
         itemsSnap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+        
+        // Sort locally if we filtered by location (to avoid composite index requirement)
+        if (listData.locationId && listData.locationId !== 'all') {
+          items.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        
         setInventoryItems(items);
 
         const pricesSnap = await getDocs(collection(db, `priceLists/${id}/items`));

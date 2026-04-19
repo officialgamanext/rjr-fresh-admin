@@ -7,6 +7,7 @@ import Customers from './pages/Customers';
 import Items from './pages/Items';
 import PriceList from './pages/PriceList';
 import PriceListDetails from './pages/PriceListDetails';
+import Categories from './pages/Categories';
 import Payments from './pages/Payments';
 import ShopDetails from './pages/ShopDetails';
 import CustomerDetails from './pages/CustomerDetails';
@@ -28,6 +29,7 @@ function App() {
               <Route path="customers" element={<Customers />} />
               <Route path="customers/:id" element={<CustomerDetails />} />
               <Route path="items" element={<Items />} />
+              <Route path="categories" element={<Categories />} />
               <Route path="pricelist" element={<PriceList />} />
               <Route path="pricelist/:id" element={<PriceListDetails />} />
               <Route path="payments" element={<Payments />} />

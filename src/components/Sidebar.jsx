@@ -7,7 +7,8 @@ import {
   Package,
   ClipboardList,
   CreditCard,
-  ChevronRight
+  ChevronRight,
+  Layers
 } from 'lucide-react';
 import '../css/components/sidebar.css';
 
@@ -17,6 +18,7 @@ const Sidebar = () => {
     { title: 'Shops', icon: <Store />, path: '/shops' },
     { title: 'Customers', icon: <Users />, path: '/customers' },
     { title: 'Items', icon: <Package />, path: '/items' },
+    { title: 'Item Categories', icon: <Layers />, path: '/categories' },
     { title: 'Price List', icon: <ClipboardList />, path: '/pricelist' },
     { title: 'Payments', icon: <CreditCard />, path: '/payments' },
   ];
