@@ -30,7 +30,10 @@ import {
   Trash2,
   Award,
   CheckCircle,
-  Truck
+  Truck,
+  Tag,
+  Save,
+  Search
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import '../css/pages/dashboard.css';
@@ -54,6 +57,13 @@ const CustomerDetails = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [customerPrices, setCustomerPrices] = useState({}); // { itemId: price }
+  const [loadingPrices, setLoadingPrices] = useState(false);
+  const [priceSearchQuery, setPriceSearchQuery] = useState('');
+  const [savingPrices, setSavingPrices] = useState(false);
+  const [tempPrices, setTempPrices] = useState({});
+  const [editingPrices, setEditingPrices] = useState({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -97,7 +107,7 @@ const CustomerDetails = () => {
     if (activeTab === 'orders') {
       setLoadingOrders(true);
       const q = query(
-        collection(db, 'orders'), 
+        collection(db, 'customerOrders'), 
         where('customerId', '==', id)
       );
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -167,6 +177,85 @@ const CustomerDetails = () => {
       toast.success(`Order status updated to ${newStatus}`);
     } catch (error) {
       toast.error("Error updating status");
+    }
+  };
+
+  const handlePriceChange = (itemId, value) => {
+    setTempPrices(prev => ({ ...prev, [itemId]: value }));
+  };
+
+  const handleSaveAllPrices = async () => {
+    setSavingPrices(true);
+    const saveToast = toast.loading("Saving customer prices...");
+    try {
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      let count = 0;
+
+      inventoryItems.forEach(item => {
+        const tPrice = tempPrices[item.id];
+        const currentPrice = customerPrices[item.id];
+        
+        if (tPrice !== undefined && tPrice !== "" && parseFloat(tPrice) >= 0) {
+          const newPrice = parseFloat(tPrice);
+          if (currentPrice !== newPrice) {
+            const priceRef = doc(db, `customers/${id}/prices`, item.id);
+            batch.set(priceRef, {
+              itemId: item.id,
+              price: newPrice,
+              updatedAt: new Date().toISOString()
+            });
+            count++;
+          }
+        }
+      });
+
+      if (count > 0) {
+        await batch.commit();
+        setCustomerPrices(prev => {
+          const next = { ...prev };
+          inventoryItems.forEach(item => {
+            if (tempPrices[item.id] !== undefined) {
+              next[item.id] = parseFloat(tempPrices[item.id]);
+            }
+          });
+          return next;
+        });
+        setEditingPrices({});
+        toast.success(`Saved ${count} prices`, { id: saveToast });
+      } else {
+        toast.dismiss(saveToast);
+        toast("No changes to save");
+      }
+    } catch (error) {
+      console.error("Error saving prices:", error);
+      toast.error("Failed to save prices", { id: saveToast });
+    } finally {
+      setSavingPrices(false);
+    }
+  };
+
+  const handleSaveIndividualPrice = async (item) => {
+    const tPrice = tempPrices[item.id];
+    if (tPrice === undefined || tPrice === "" || parseFloat(tPrice) < 0) {
+      toast.error("Invalid price");
+      return;
+    }
+
+    const saveToast = toast.loading(`Saving ${item.name} price...`);
+    try {
+      const priceRef = doc(db, `customers/${id}/prices`, item.id);
+      const newPrice = parseFloat(tPrice);
+      await setDoc(priceRef, {
+        itemId: item.id,
+        price: newPrice,
+        updatedAt: new Date().toISOString()
+      });
+      setCustomerPrices(prev => ({ ...prev, [item.id]: newPrice }));
+      setEditingPrices(prev => ({ ...prev, [item.id]: false }));
+      toast.success("Price saved", { id: saveToast });
+    } catch (error) {
+      toast.error("Failed to save price", { id: saveToast });
     }
   };
 
@@ -283,21 +372,39 @@ const CustomerDetails = () => {
                     <th>ORDER ID</th>
                     <th>DATE</th>
                     <th>GRAND TOTAL</th>
+                    <th>PAYMENT</th>
+                    <th>ASSIGNED TO</th>
                     <th>STATUS</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingOrders ? (
-                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" /></td></tr>
+                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" /></td></tr>
                   ) : orders.length === 0 ? (
-                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>No orders found for this customer.</td></tr>
+                    <tr><td colSpan="7" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>No orders found for this customer.</td></tr>
                   ) : (
                     orders.map(order => (
                       <tr key={order.id}>
                         <td style={{ fontWeight: 600 }}>#{order.id.slice(-6).toUpperCase()}</td>
                         <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                         <td style={{ fontWeight: 700, color: 'var(--primary-color)' }}>₹{order.grandTotal}</td>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600 }}>{order.paymentMethod}</span>
+                            <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : 'status-warning'}`} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                              {order.paymentStatus}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                              {order.assignedToName ? order.assignedToName.charAt(0) : '?'}
+                            </div>
+                            <span style={{ fontSize: '13px' }}>{order.assignedToName || 'Unassigned'}</span>
+                          </div>
+                        </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span className={`status-badge ${order.status === 'Delivered' ? 'status-success' : 'status-warning'}`}>
@@ -444,6 +551,13 @@ const CustomerDetails = () => {
         orderToEdit={editingOrder}
         isViewOnly={isViewOnly}
       />
+      <style>{`
+        .btn-success-sm { background: var(--success-color); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
+        .btn-danger-sm { background: var(--danger-color); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
+        .btn-success-sm:hover, .btn-danger-sm:hover { opacity: 0.9; }
+        .action-btn-ui { padding: 8px; border-radius: 8px; border: none; background: #f8fafc; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .action-btn-ui:hover { background: #f1f5f9; transform: translateY(-1px); }
+      `}</style>
 
     </div>
   );

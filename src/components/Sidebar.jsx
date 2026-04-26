@@ -8,7 +8,8 @@ import {
   ClipboardList,
   CreditCard,
   ChevronRight,
-  Layers
+  Layers,
+  Tag
 } from 'lucide-react';
 import '../css/components/sidebar.css';
 
@@ -17,6 +18,7 @@ const Sidebar = () => {
     { title: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
     { title: 'Shops', icon: <Store />, path: '/shops' },
     { title: 'Customers', icon: <Users />, path: '/customers' },
+    { title: 'Customer Prices', icon: <Tag />, path: '/customer-prices' },
     { title: 'Items', icon: <Package />, path: '/items' },
     { title: 'Item Categories', icon: <Layers />, path: '/categories' },
     { title: 'Employees', icon: <Users />, path: '/employees' },

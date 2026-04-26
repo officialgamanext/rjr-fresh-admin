@@ -13,6 +13,7 @@ import ShopDetails from './pages/ShopDetails';
 import CustomerDetails from './pages/CustomerDetails';
 import Employees from './pages/Employees';
 import EmployeeDetails from './pages/EmployeeDetails';
+import CustomerPrices from './pages/CustomerPrices';
 import { Toaster } from 'react-hot-toast';
 import { LocationProvider } from './contexts/LocationContext';
 import './index.css';
@@ -30,6 +31,7 @@ function App() {
               <Route path="shops/:id" element={<ShopDetails />} />
               <Route path="customers" element={<Customers />} />
               <Route path="customers/:id" element={<CustomerDetails />} />
+              <Route path="customer-prices" element={<CustomerPrices />} />
               <Route path="items" element={<Items />} />
               <Route path="categories" element={<Categories />} />
               <Route path="pricelist" element={<PriceList />} />

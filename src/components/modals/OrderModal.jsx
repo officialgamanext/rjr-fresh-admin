@@ -9,7 +9,9 @@ import {
   Tag,
   Hash,
   Layers,
-  Save
+  Save,
+  UserCheck,
+  CreditCard
 } from 'lucide-react';
 import {
   collection,
@@ -41,6 +43,12 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
   const [paymentReceived, setPaymentReceived] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  
+  const [orderStatus, setOrderStatus] = useState('Ordered');
+  const [paymentStatus, setPaymentStatus] = useState('Unpaid');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [assignedTo, setAssignedTo] = useState('');
 
   const entity = shop || customer;
 
@@ -59,17 +67,29 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
           setAllInventoryItems(inventory);
 
           // 2. Fetch prices from the entity's price list (if available)
+          const pMap = {};
           const priceListId = shop?.priceListId || customer?.priceListId;
           if (priceListId) {
             const pricesSnap = await getDocs(collection(db, `priceLists/${priceListId}/items`));
-            const pMap = {};
             pricesSnap.forEach(doc => {
               pMap[doc.id] = doc.data().price;
             });
-            setPriceMap(pMap);
           }
+          
+          // 2b. Fetch Global Customer Prices for B2C orders
+          if (customer) {
+            const globalPricesSnap = await getDocs(collection(db, 'globalCustomerPrices'));
+            globalPricesSnap.forEach(doc => {
+              pMap[doc.id] = doc.data().price;
+            });
+          }
+          setPriceMap(pMap);
 
-          // 3. If editing, populate the items
+          // 3. Fetch Employees
+          const employeesSnap = await getDocs(collection(db, 'employees'));
+          setEmployees(employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+          // 4. If editing, populate the items
           if (orderToEdit) {
             setItems(orderToEdit.items.map(item => {
               const invItem = inventory.find(i => i.id === item.itemId);
@@ -87,6 +107,10 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
             }));
             setDiscount(orderToEdit.discount || 0);
             setPaymentReceived(orderToEdit.paymentReceived || 0);
+            setOrderStatus(orderToEdit.status || 'Ordered');
+            setPaymentStatus(orderToEdit.paymentStatus || 'Unpaid');
+            setPaymentMethod(orderToEdit.paymentMethod || 'Cash');
+            setAssignedTo(orderToEdit.assignedTo || '');
           } else {
             setItems([{
               id: Date.now(),
@@ -99,6 +123,10 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
             }]);
             setDiscount(0);
             setPaymentReceived(0);
+            setOrderStatus('Ordered');
+            setPaymentStatus('Unpaid');
+            setPaymentMethod('Cash');
+            setAssignedTo('');
           }
         } catch (error) {
           console.error("Error loading order data:", error);
@@ -178,8 +206,13 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         discount: parseFloat(discount) || 0,
         grandTotal,
         paymentReceived: parseFloat(paymentReceived) || 0,
+        paymentStatus,
+        paymentMethod,
+        assignedTo,
+        employeeId: assignedTo, // For mobile app compatibility
+        assignedToName: employees.find(e => e.id === assignedTo)?.name || '',
         updatedAt: new Date().toISOString(),
-        status: orderToEdit ? orderToEdit.status : (customer ? 'Shipped' : 'Completed') // Shipped for customers, Completed for shops
+        status: orderStatus
       };
 
       if (shop) {
@@ -192,12 +225,14 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         orderData.type = 'B2C';
       }
 
+      const collectionName = customer ? 'customerOrders' : 'orders';
+
       if (orderToEdit) {
-        await updateDoc(doc(db, 'orders', orderToEdit.id), orderData);
+        await updateDoc(doc(db, collectionName, orderToEdit.id), orderData);
         toast.success("Order updated successfully", { id: saveToast });
       } else {
         orderData.createdAt = new Date().toISOString();
-        await addDoc(collection(db, 'orders'), orderData);
+        await addDoc(collection(db, collectionName), orderData);
         toast.success("Order saved successfully", { id: saveToast });
       }
       onClose();
@@ -252,9 +287,18 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
 
                 <div className="items-rows">
                   {items.map((row) => {
-                    const filteredInventory = row.categoryId
-                      ? allInventoryItems.filter(i => i.category === categories.find(c => c.id === row.categoryId)?.name)
-                      : allInventoryItems;
+                    const filteredInventory = allInventoryItems.filter(i => {
+                      const matchesCategory = !row.categoryId || i.category === categories.find(c => c.id === row.categoryId)?.name;
+                      if (shop) {
+                        // For Shops (B2B), hide Customer Only (B2C) items
+                        return matchesCategory && !i.forCustomerOnly;
+                      }
+                      if (customer) {
+                        // For Customers (B2C), only show Customer Only items
+                        return matchesCategory && i.forCustomerOnly;
+                      }
+                      return matchesCategory;
+                    });
 
                     return (
                       <div key={row.id} className="item-row">
@@ -359,6 +403,67 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                     </div>
                   </div>
                 </div>
+
+                <div className="summary-card status-controls" style={{ marginTop: '16px' }}>
+                  <div className="summary-row">
+                    <span>Order Status</span>
+                    <select 
+                      className="form-control" 
+                      value={orderStatus} 
+                      onChange={(e) => setOrderStatus(e.target.value)}
+                      disabled={isViewOnly}
+                    >
+                      <option value="Ordered">Ordered</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                  <div className="summary-row">
+                    <span>Payment Status</span>
+                    <select 
+                      className="form-control" 
+                      value={paymentStatus} 
+                      onChange={(e) => setPaymentStatus(e.target.value)}
+                      disabled={isViewOnly}
+                    >
+                      <option value="Unpaid">Unpaid</option>
+                      <option value="Paid">Paid</option>
+                      <option value="Partial">Partial</option>
+                    </select>
+                  </div>
+                  <div className="summary-row">
+                    <span>Payment Method</span>
+                    <select 
+                      className="form-control" 
+                      value={paymentMethod} 
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      disabled={isViewOnly}
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Card">Card</option>
+                    </select>
+                  </div>
+                  <div className="summary-row">
+                    <span>Assign To Employee</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                      <UserCheck size={18} color="var(--primary-color)" />
+                      <select 
+                        className="form-control" 
+                        value={assignedTo} 
+                        onChange={(e) => setAssignedTo(e.target.value)}
+                        disabled={isViewOnly}
+                      >
+                        <option value="">Select Employee</option>
+                        {employees.map(e => (
+                          <option key={e.id} value={e.id}>{e.name} ({e.role || 'Agent'})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -377,5 +482,31 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
     </div>
   );
 };
+
+const styles = `
+  .status-controls {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+  .status-controls .summary-row {
+    margin-bottom: 12px;
+  }
+  .status-controls select.form-control {
+    width: 150px;
+    height: 36px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 13px;
+    font-weight: 600;
+  }
+`;
+
+// Add a style tag to the document head
+if (typeof document !== 'undefined') {
+  const styleTag = document.createElement('style');
+  styleTag.textContent = styles;
+  document.head.appendChild(styleTag);
+}
 
 export default OrderModal;

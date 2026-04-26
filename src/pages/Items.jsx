@@ -47,7 +47,8 @@ const Items = () => {
     category: '',
     unit: 'kg',
     hsnCode: '',
-    locationId: ''
+    locationId: '',
+    forCustomerOnly: false
   });
 
   const [categoryData, setCategoryData] = useState({
@@ -115,7 +116,8 @@ const Items = () => {
         category: item.category,
         unit: item.unit,
         hsnCode: item.hsnCode || '',
-        locationId: item.locationId || ''
+        locationId: item.locationId || '',
+        forCustomerOnly: item.forCustomerOnly || false
       });
     } else {
       setEditingItem(null);
@@ -124,7 +126,8 @@ const Items = () => {
         category: categories.length > 0 ? categories[0].name : '',
         unit: 'kg',
         hsnCode: '',
-        locationId: selectedLocation !== 'all' ? selectedLocation : ''
+        locationId: selectedLocation !== 'all' ? selectedLocation : '',
+        forCustomerOnly: false
       });
     }
     setIsModalOpen(true);
@@ -257,6 +260,11 @@ const Items = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Tag size={16} color="var(--primary-color)" />
                         <span style={{ fontWeight: 600 }}>{item.name}</span>
+                        {item.forCustomerOnly && (
+                          <span className="status-badge" style={{ backgroundColor: '#fef2f2', color: '#ef4444', fontSize: '10px', marginLeft: '4px' }}>
+                            B2C Only
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -381,6 +389,22 @@ const Items = () => {
                       placeholder="Optional"
                     />
                   </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '8px' }}>
+                  <label className="checkbox-container">
+                    <input 
+                      type="checkbox" 
+                      name="forCustomerOnly" 
+                      checked={formData.forCustomerOnly} 
+                      onChange={(e) => setFormData(prev => ({ ...prev, forCustomerOnly: e.target.checked }))} 
+                    />
+                    <span className="checkmark"></span>
+                    <span style={{ marginLeft: '32px', fontSize: '14px', fontWeight: 500 }}>This item is only for Customers (B2C)</span>
+                  </label>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '32px', marginTop: '4px' }}>
+                    If checked, this item will not appear in Shop (B2B) orders.
+                  </p>
                 </div>
               </div>
               <div className="modal-footer">
@@ -514,6 +538,42 @@ const Items = () => {
 
         .spinner { animation: rotate 1s linear infinite; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .checkbox-container {
+          display: block;
+          position: relative;
+          cursor: pointer;
+          user-select: none;
+        }
+        .checkbox-container input {
+          position: absolute;
+          opacity: 0;
+          cursor: pointer;
+          height: 0; width: 0;
+        }
+        .checkmark {
+          position: absolute;
+          top: 0; left: 0;
+          height: 22px; width: 22px;
+          background-color: #f1f5f9;
+          border-radius: 6px;
+          border: 1.5px solid #e2e8f0;
+          transition: all 0.2s;
+        }
+        .checkbox-container:hover input ~ .checkmark { background-color: #e2e8f0; }
+        .checkbox-container input:checked ~ .checkmark { background-color: var(--primary-color); border-color: var(--primary-color); }
+        .checkmark:after {
+          content: "";
+          position: absolute;
+          display: none;
+        }
+        .checkbox-container input:checked ~ .checkmark:after { display: block; }
+        .checkbox-container .checkmark:after {
+          left: 7px; top: 3px;
+          width: 5px; height: 10px;
+          border: solid white;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
       `}</style>
     </div>
   );
