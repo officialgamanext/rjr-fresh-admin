@@ -19,6 +19,7 @@ const Sidebar = () => {
     { title: 'Customers', icon: <Users />, path: '/customers' },
     { title: 'Items', icon: <Package />, path: '/items' },
     { title: 'Item Categories', icon: <Layers />, path: '/categories' },
+    { title: 'Employees', icon: <Users />, path: '/employees' },
     { title: 'Price List', icon: <ClipboardList />, path: '/pricelist' },
     { title: 'Payments', icon: <CreditCard />, path: '/payments' },
   ];
