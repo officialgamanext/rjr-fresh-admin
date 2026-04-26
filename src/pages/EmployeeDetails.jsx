@@ -42,6 +42,67 @@ import '../css/components/table.css';
 import '../css/components/modal.css';
 import '../css/pages/employee-details.css';
 
+const AdvanceRow = ({ advance, employeeId, onAddInstallment }) => {
+  const [installments, setInstallments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, `employees/${employeeId}/advances/${advance.id}/installments`), 
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setInstallments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [employeeId, advance.id]);
+
+  return (
+    <>
+      <tr className="advance-main-row">
+        <td>{new Date(advance.createdAt).toLocaleDateString()}</td>
+        <td className="font-bold">₹{advance.amount}</td>
+        <td className="text-success">₹{advance.paidAmount || 0}</td>
+        <td className="text-danger">₹{advance.amount - (advance.paidAmount || 0)}</td>
+        <td>
+          <span className={`status-badge ${advance.status === 'Completed' ? 'status-success' : 'status-warning'}`}>
+            {advance.status}
+          </span>
+        </td>
+        <td>
+          <button 
+            className="btn-success-sm" 
+            onClick={() => onAddInstallment(advance)}
+            disabled={advance.status === 'Completed'}
+          >
+            Add Installment
+          </button>
+        </td>
+      </tr>
+      {installments.length > 0 && (
+        <tr className="installments-sub-row">
+          <td colSpan="6">
+            <div className="installments-wrapper">
+              <div className="installments-header">
+                <History size={12} /> Installments Paid:
+              </div>
+              <div className="installments-list">
+                {installments.map(inst => (
+                  <div key={inst.id} className="installment-pill">
+                    <span className="inst-amount">₹{inst.amount}</span>
+                    <span className="inst-date">{new Date(inst.createdAt).toLocaleDateString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+};
+
 const EmployeeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -84,22 +145,12 @@ const EmployeeDetails = () => {
     fetchEmployee();
   }, [id, navigate]);
 
-  // Fetch Advances & Installments
+  // Fetch Advances
   useEffect(() => {
     if (activeTab === 'advance') {
       const q = query(collection(db, `employees/${id}/advances`), orderBy('createdAt', 'desc'));
-      const unsubscribe = onSnapshot(q, async (snapshot) => {
-        const advancesData = [];
-        for (const advanceDoc of snapshot.docs) {
-          const adv = { id: advanceDoc.id, ...advanceDoc.data() };
-          // Fetch installments for this advance
-          const instQ = query(collection(db, `employees/${id}/advances/${adv.id}/installments`), orderBy('createdAt', 'desc'));
-          // Since we can't easily do nested onSnapshot in a loop, we'll just fetch once or restructure.
-          // For now, I'll use a simpler approach: store installments count/total in the advance doc itself or just fetch them.
-          // Actually, let's just use a separate effect or sub-component for better management.
-          advancesData.push(adv);
-        }
-        setAdvances(advancesData);
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setAdvances(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
       return () => unsubscribe();
     }
@@ -326,26 +377,12 @@ const EmployeeDetails = () => {
                       <tr><td colSpan="6" className="text-center">No advance records found</td></tr>
                     ) : (
                       advances.map(adv => (
-                        <tr key={adv.id}>
-                          <td>{new Date(adv.createdAt).toLocaleDateString()}</td>
-                          <td className="font-bold">₹{adv.amount}</td>
-                          <td className="text-success">₹{adv.paidAmount || 0}</td>
-                          <td className="text-danger">₹{adv.amount - (adv.paidAmount || 0)}</td>
-                          <td>
-                            <span className={`status-badge ${adv.status === 'Completed' ? 'status-success' : 'status-warning'}`}>
-                              {adv.status}
-                            </span>
-                          </td>
-                          <td>
-                            <button 
-                              className="btn-success-sm" 
-                              onClick={() => { setSelectedAdvance(adv); setIsInstallmentModalOpen(true); }}
-                              disabled={adv.status === 'Completed'}
-                            >
-                              Add Installment
-                            </button>
-                          </td>
-                        </tr>
+                        <AdvanceRow 
+                          key={adv.id} 
+                          advance={adv} 
+                          employeeId={id} 
+                          onAddInstallment={(a) => { setSelectedAdvance(a); setIsInstallmentModalOpen(true); }}
+                        />
                       ))
                     )}
                   </tbody>
