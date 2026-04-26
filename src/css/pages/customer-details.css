@@ -219,3 +219,105 @@
     transform: rotate(360deg);
   }
 }
+
+/* Loyalty Points Styles */
+.loyalty-card .points-circle {
+  transition: transform 0.3s ease;
+}
+
+.loyalty-card .points-circle:hover {
+  transform: scale(1.05);
+}
+
+.loyalty-info-box {
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.loyalty-info-box:hover {
+  border-color: #f5d0fe;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Status Button Styles */
+.btn-success-sm {
+  transition: all 0.2s;
+}
+
+.btn-success-sm:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+}
+
+.action-btn-ui {
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.action-btn-ui:hover {
+  background-color: #f1f5f9;
+}
+
+/* Premium Modal Enhancements */
+.custom-modal { max-width: 550px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
+.header-icon-title { display: flex; align-items: center; gap: 12px; }
+.header-icon-box { width: 40px; height: 40px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+
+.form-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.input-with-icon-premium { position: relative; display: flex; align-items: center; }
+.input-with-icon-premium.align-top { align-items: flex-start; }
+.input-with-icon-premium .icon-wrapper { position: absolute; left: 14px; color: var(--text-muted); z-index: 10; display: flex; align-items: center; justify-content: center; height: 100%; }
+.input-with-icon-premium.align-top .icon-wrapper { height: 46px; }
+
+.premium-input { 
+  padding: 12px 14px 12px 44px !important; 
+  border: 1.5px solid #e2e8f0 !important; 
+  border-radius: 12px !important; 
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+  background-color: #fcfcfd !important;
+  width: 100%;
+}
+.premium-input:focus { 
+  border-color: var(--primary-color) !important; 
+  background-color: #fff !important;
+  box-shadow: 0 0 0 4px rgba(59, 113, 254, 0.1) !important;
+  outline: none;
+}
+
+.btn-primary-premium {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary-premium:hover:not(:disabled) { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 113, 254, 0.2); }
+.btn-primary-premium:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.btn-secondary-premium {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: #f1f5f9;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+.btn-secondary-premium:hover { background-color: #e2e8f0; }

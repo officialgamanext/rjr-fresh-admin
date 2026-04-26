@@ -244,9 +244,14 @@ const Customers = () => {
 
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content custom-modal">
             <div className="modal-header">
-              <h2>{selectedCustomer ? 'Edit Customer' : 'Add New Customer'}</h2>
+              <div className="header-icon-title">
+                <div className="header-icon-box">
+                  <User size={20} color="var(--primary-color)" />
+                </div>
+                <h2>{selectedCustomer ? 'Edit Customer' : 'Add New Customer'}</h2>
+              </div>
               <button className="close-btn" onClick={handleCloseModal}><X size={24} /></button>
             </div>
             <form onSubmit={handleSaveCustomer}>
@@ -255,7 +260,7 @@ const Customers = () => {
                   <label>Location</label>
                   <select 
                     name="locationId" 
-                    className="form-control" 
+                    className="form-control premium-input" 
                     value={formData.locationId}
                     onChange={handleInputChange}
                     required
@@ -268,38 +273,38 @@ const Customers = () => {
                 </div>
                 <div className="form-group">
                   <label>Customer Name</label>
-                  <div className="input-with-icon">
-                    <User size={18} />
-                    <input type="text" name="name" className="form-control" placeholder="Enter name" value={formData.name} onChange={handleInputChange} required />
+                  <div className="input-with-icon-premium">
+                    <div className="icon-wrapper"><User size={18} /></div>
+                    <input type="text" name="name" className="form-control premium-input" placeholder="Full name of customer" value={formData.name} onChange={handleInputChange} required />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="form-row-grid">
                   <div className="form-group">
                     <label>Mobile Number</label>
-                    <div className="input-with-icon">
-                      <Phone size={18} />
-                      <input type="text" name="mobile" className="form-control" placeholder="10-digit mobile" value={formData.mobile} onChange={handleInputChange} required />
+                    <div className="input-with-icon-premium">
+                      <div className="icon-wrapper"><Phone size={18} /></div>
+                      <input type="text" name="mobile" className="form-control premium-input" placeholder="10-digit mobile number" value={formData.mobile} onChange={handleInputChange} required />
                     </div>
                   </div>
                   <div className="form-group">
                     <label>Email (Optional)</label>
-                    <div className="input-with-icon">
-                      <Mail size={18} />
-                      <input type="email" name="email" className="form-control" placeholder="Email address" value={formData.email} onChange={handleInputChange} />
+                    <div className="input-with-icon-premium">
+                      <div className="icon-wrapper"><Mail size={18} /></div>
+                      <input type="email" name="email" className="form-control premium-input" placeholder="Email address" value={formData.email} onChange={handleInputChange} />
                     </div>
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Address</label>
-                  <div className="input-with-icon" style={{ alignItems: 'flex-start' }}>
-                    <MapPin size={18} style={{ marginTop: '10px' }} />
-                    <textarea name="address" className="form-control" rows="3" placeholder="Full address" value={formData.address} onChange={handleInputChange} required></textarea>
+                  <label>Full Address</label>
+                  <div className="input-with-icon-premium align-top">
+                    <div className="icon-wrapper"><MapPin size={18} /></div>
+                    <textarea name="address" className="form-control premium-input" rows="3" placeholder="Enter complete address detail" value={formData.address} onChange={handleInputChange} required></textarea>
                   </div>
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn-secondary" onClick={handleCloseModal}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+                <button type="button" className="btn-secondary-premium" onClick={handleCloseModal}>Cancel</button>
+                <button type="submit" className="btn-primary-premium" disabled={saving}>
                   {saving ? <Loader2 size={18} className="spinner" /> : (selectedCustomer ? 'Update Customer' : 'Save Customer')}
                 </button>
               </div>
@@ -319,9 +324,56 @@ const Customers = () => {
       <style>{`
         .action-btn-ui { padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; border: none; background: transparent; cursor: pointer; }
         .action-btn-ui:hover { background-color: #f1f5f9; }
-        .input-with-icon { position: relative; }
-        .input-with-icon svg { position: absolute; left: 12px; top: 11px; color: var(--text-muted); }
-        .input-with-icon .form-control { padding-left: 40px; }
+        
+        .custom-modal { max-width: 550px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
+        .header-icon-title { display: flex; align-items: center; gap: 12px; }
+        .header-icon-box { width: 40px; height: 40px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        
+        .form-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        
+        .input-with-icon-premium { position: relative; display: flex; align-items: center; }
+        .input-with-icon-premium.align-top { align-items: flex-start; }
+        .input-with-icon-premium .icon-wrapper { position: absolute; left: 14px; color: var(--text-muted); z-index: 10; display: flex; align-items: center; justify-content: center; height: 100%; }
+        .input-with-icon-premium.align-top .icon-wrapper { height: 46px; }
+        
+        .premium-input { 
+          padding: 12px 14px 12px 44px !important; 
+          border: 1.5px solid #e2e8f0 !important; 
+          border-radius: 12px !important; 
+          font-size: 14px !important;
+          transition: all 0.2s ease !important;
+          background-color: #fcfcfd !important;
+        }
+        .premium-input:focus { 
+          border-color: var(--primary-color) !important; 
+          background-color: #fff !important;
+          box-shadow: 0 0 0 4px rgba(59, 113, 254, 0.1) !important;
+        }
+        
+        .btn-primary-premium {
+          background-color: var(--primary-color);
+          color: white;
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.2s;
+        }
+        .btn-primary-premium:hover:not(:disabled) { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 113, 254, 0.2); }
+        .btn-primary-premium:disabled { opacity: 0.7; cursor: not-allowed; }
+        
+        .btn-secondary-premium {
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          color: var(--text-secondary);
+          background-color: #f1f5f9;
+          transition: all 0.2s;
+        }
+        .btn-secondary-premium:hover { background-color: #e2e8f0; }
+
         .spinner { animation: rotate 1s linear infinite; }
         @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>

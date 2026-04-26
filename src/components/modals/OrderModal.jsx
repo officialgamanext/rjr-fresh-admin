@@ -25,7 +25,7 @@ import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 import '../../css/components/order-modal.css';
 
-const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly }) => {
+const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, isViewOnly }) => {
   const [items, setItems] = useState([{
     id: Date.now(),
     categoryId: '',
@@ -42,23 +42,26 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const entity = shop || customer;
+
   useEffect(() => {
-    if (isOpen && shop) {
+    if (isOpen && entity) {
       const fetchData = async () => {
         setLoading(true);
         try {
           // 1. Fetch items for this location
           const itemsQuery = query(
             collection(db, 'items'),
-            where('locationId', '==', shop.locationId)
+            where('locationId', '==', entity.locationId)
           );
           const itemsSnap = await getDocs(itemsQuery);
           const inventory = itemsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setAllInventoryItems(inventory);
 
-          // 2. Fetch prices from the shop's price list
-          if (shop.priceListId) {
-            const pricesSnap = await getDocs(collection(db, `priceLists/${shop.priceListId}/items`));
+          // 2. Fetch prices from the entity's price list (if available)
+          const priceListId = shop?.priceListId || customer?.priceListId;
+          if (priceListId) {
+            const pricesSnap = await getDocs(collection(db, `priceLists/${priceListId}/items`));
             const pMap = {};
             pricesSnap.forEach(doc => {
               pMap[doc.id] = doc.data().price;
@@ -69,13 +72,11 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
           // 3. If editing, populate the items
           if (orderToEdit) {
             setItems(orderToEdit.items.map(item => {
-              // Find matching category from inventory if not stored (though we should store category in the future)
-              // For now, items in orderData only have itemId. 
               const invItem = inventory.find(i => i.id === item.itemId);
               const categoryMatch = categories.find(c => c.name === invItem?.category);
               
               return {
-                id: Math.random(), // New unique ID for the row
+                id: Math.random(),
                 categoryId: categoryMatch?.id || '',
                 itemId: item.itemId,
                 quantity: item.quantity,
@@ -87,7 +88,6 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
             setDiscount(orderToEdit.discount || 0);
             setPaymentReceived(orderToEdit.paymentReceived || 0);
           } else {
-            // Reset for new order
             setItems([{
               id: Date.now(),
               categoryId: '',
@@ -109,7 +109,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
       };
       fetchData();
     }
-  }, [isOpen, shop, orderToEdit, categories]);
+  }, [isOpen, shop, customer, orderToEdit, categories]);
 
   const addRow = () => {
     setItems([...items, {
@@ -140,7 +140,6 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
         } else if (field === 'quantity') {
           newItem.subtotal = newItem.price * (parseFloat(value) || 0);
         } else if (field === 'categoryId') {
-          // Reset itemId if category changes
           newItem.itemId = '';
           newItem.price = 0;
           newItem.subtotal = 0;
@@ -157,7 +156,6 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
   const grandTotal = Math.max(0, totalSubtotal - (parseFloat(discount) || 0));
 
   const handleSaveOrder = async () => {
-    // Validations
     if (items.some(item => !item.itemId || item.quantity <= 0)) {
       toast.error("Please fill all item details correctly");
       return;
@@ -167,9 +165,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
     const saveToast = toast.loading(orderToEdit ? "Updating order..." : "Saving order...");
     try {
       const orderData = {
-        shopId: shop.id,
-        shopName: shop.name,
-        locationId: shop.locationId,
+        locationId: entity.locationId,
         items: items.map(item => ({
           itemId: item.itemId,
           itemName: allInventoryItems.find(i => i.id === item.itemId)?.name,
@@ -183,8 +179,18 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
         grandTotal,
         paymentReceived: parseFloat(paymentReceived) || 0,
         updatedAt: new Date().toISOString(),
-        status: 'Completed'
+        status: orderToEdit ? orderToEdit.status : (customer ? 'Shipped' : 'Completed') // Shipped for customers, Completed for shops
       };
+
+      if (shop) {
+        orderData.shopId = shop.id;
+        orderData.shopName = shop.name;
+        orderData.type = 'B2B';
+      } else if (customer) {
+        orderData.customerId = customer.id;
+        orderData.customerName = customer.name;
+        orderData.type = 'B2C';
+      }
 
       if (orderToEdit) {
         await updateDoc(doc(db, 'orders', orderToEdit.id), orderData);
@@ -213,7 +219,7 @@ const OrderModal = ({ isOpen, onClose, shop, categories, orderToEdit, isViewOnly
             <ShoppingCart size={24} className="header-icon" />
             <div>
               <h2>{isViewOnly ? 'Order Details' : (orderToEdit ? 'Edit Order' : 'Create New Order')}</h2>
-              <p>Shop: <strong>{shop.name}</strong> • Order ID: <strong>{orderToEdit ? `#${orderToEdit.id.slice(-6).toUpperCase()}` : 'NEW'}</strong></p>
+              <p>{shop ? 'Shop' : 'Customer'}: <strong>{entity.name}</strong> • Order ID: <strong>{orderToEdit ? `#${orderToEdit.id.slice(-6).toUpperCase()}` : 'NEW'}</strong></p>
             </div>
           </div>
           <button className="close-btn" onClick={onClose}><X size={24} /></button>

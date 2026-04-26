@@ -287,9 +287,14 @@ const Items = () => {
       {/* Item Modal */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content custom-modal">
             <div className="modal-header">
-              <h2>{editingItem ? 'Edit Item' : 'Add New Item'}</h2>
+              <div className="header-icon-title">
+                <div className="header-icon-box">
+                  <Tag size={20} color="var(--primary-color)" />
+                </div>
+                <h2>{editingItem ? 'Edit Item' : 'Add New Item'}</h2>
+              </div>
               <button className="close-btn" onClick={() => setIsModalOpen(false)}><X size={24} /></button>
             </div>
             <form onSubmit={handleSaveItem}>
@@ -298,7 +303,7 @@ const Items = () => {
                   <label>Location</label>
                   <select 
                     name="locationId" 
-                    className="form-control" 
+                    className="form-control premium-input" 
                     value={formData.locationId}
                     onChange={handleInputChange}
                     required
@@ -311,43 +316,49 @@ const Items = () => {
                 </div>
                 <div className="form-group">
                   <label>Item Name</label>
-                  <input 
-                    type="text" 
-                    name="name" 
-                    className="form-control" 
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Fresh Tomato"
-                    required 
-                  />
+                  <div className="input-with-icon-premium">
+                    <div className="icon-wrapper"><Tag size={18} /></div>
+                    <input 
+                      type="text" 
+                      name="name" 
+                      className="form-control premium-input" 
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="e.g. Fresh Tomato"
+                      required 
+                    />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Category</label>
                   {categories.length === 0 ? (
-                    <div style={{ padding: '10px', backgroundColor: '#fef2f2', borderRadius: '8px', color: 'var(--danger)', fontSize: '13px' }}>
-                      Please add a category first!
+                    <div style={{ padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', color: '#b91c1c', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <X size={16} /> Please add a category first!
                     </div>
                   ) : (
-                    <select 
-                      name="category" 
-                      className="form-control" 
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.name}>{cat.name} ({cat.shortCode})</option>
-                      ))}
-                    </select>
+                    <div className="input-with-icon-premium">
+                      <div className="icon-wrapper"><Layers size={18} /></div>
+                      <select 
+                        name="category" 
+                        className="form-control premium-input" 
+                        value={formData.category}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.name}>{cat.name} ({cat.shortCode})</option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="form-row-grid">
                   <div className="form-group">
                     <label>Unit</label>
                     <select 
                       name="unit" 
-                      className="form-control" 
+                      className="form-control premium-input" 
                       value={formData.unit}
                       onChange={handleInputChange}
                     >
@@ -364,7 +375,7 @@ const Items = () => {
                     <input 
                       type="text" 
                       name="hsnCode" 
-                      className="form-control" 
+                      className="form-control premium-input" 
                       value={formData.hsnCode}
                       onChange={handleInputChange}
                       placeholder="Optional"
@@ -373,8 +384,8 @@ const Items = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving || categories.length === 0}>
+                <button type="button" className="btn-secondary-premium" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn-primary-premium" disabled={saving || categories.length === 0}>
                   {saving ? <Loader2 size={18} className="spinner" /> : (editingItem ? 'Update Item' : 'Save Item')}
                 </button>
               </div>
@@ -386,9 +397,14 @@ const Items = () => {
       {/* Category Modal */}
       {isCategoryModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '400px' }}>
+          <div className="modal-content custom-modal" style={{ maxWidth: '450px' }}>
             <div className="modal-header">
-              <h2>Add New Category</h2>
+              <div className="header-icon-title">
+                <div className="header-icon-box">
+                  <Layers size={20} color="var(--primary-color)" />
+                </div>
+                <h2>Add New Category</h2>
+              </div>
               <button className="close-btn" onClick={() => setIsCategoryModalOpen(false)}><X size={24} /></button>
             </div>
             <form onSubmit={handleSaveCategory}>
@@ -398,10 +414,11 @@ const Items = () => {
                   <input 
                     type="text" 
                     name="name" 
-                    className="form-control" 
+                    className="form-control premium-input" 
                     value={categoryData.name}
                     onChange={handleCategoryInputChange}
                     placeholder="e.g. Vegetables"
+                    style={{ paddingLeft: '14px !important' }}
                     required 
                   />
                 </div>
@@ -410,17 +427,18 @@ const Items = () => {
                   <input 
                     type="text" 
                     name="shortCode" 
-                    className="form-control" 
+                    className="form-control premium-input" 
                     value={categoryData.shortCode}
                     onChange={handleCategoryInputChange}
                     placeholder="e.g. VEG"
+                    style={{ paddingLeft: '14px !important' }}
                     required 
                   />
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn-secondary" onClick={() => setIsCategoryModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+                <button type="button" className="btn-secondary-premium" onClick={() => setIsCategoryModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn-primary-premium" disabled={saving}>
                   {saving ? <Loader2 size={18} className="spinner" /> : 'Save Category'}
                 </button>
               </div>
@@ -438,24 +456,64 @@ const Items = () => {
       />
 
       <style>{`
-        .action-btn-ui {
-          padding: 6px;
-          border-radius: 6px;
+        .action-btn-ui { padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; border: none; background: transparent; cursor: pointer; }
+        .action-btn-ui:hover { background-color: #f1f5f9; }
+        
+        .custom-modal { max-width: 550px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
+        .header-icon-title { display: flex; align-items: center; gap: 12px; }
+        .header-icon-box { width: 40px; height: 40px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        
+        .form-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        
+        .input-with-icon-premium { position: relative; display: flex; align-items: center; }
+        .input-with-icon-premium .icon-wrapper { position: absolute; left: 14px; color: var(--text-muted); z-index: 10; display: flex; align-items: center; justify-content: center; height: 100%; }
+        
+        .premium-input { 
+          padding: 12px 14px 12px 44px !important; 
+          border: 1.5px solid #e2e8f0 !important; 
+          border-radius: 12px !important; 
+          font-size: 14px !important;
+          transition: all 0.2s ease !important;
+          background-color: #fcfcfd !important;
+          width: 100%;
+        }
+        .premium-input:focus { 
+          border-color: var(--primary-color) !important; 
+          background-color: #fff !important;
+          box-shadow: 0 0 0 4px rgba(59, 113, 254, 0.1) !important;
+          outline: none;
+        }
+        
+        .btn-primary-premium {
+          background-color: var(--primary-color);
+          color: white;
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
           display: flex;
           align-items: center;
-          justify-content: center;
-          transition: background 0.2s;
+          gap: 8px;
+          transition: all 0.2s;
+          cursor: pointer;
+          border: none;
         }
-        .action-btn-ui:hover {
+        .btn-primary-premium:hover:not(:disabled) { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 113, 254, 0.2); }
+        .btn-primary-premium:disabled { opacity: 0.7; cursor: not-allowed; }
+        
+        .btn-secondary-premium {
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          color: var(--text-secondary);
           background-color: #f1f5f9;
+          transition: all 0.2s;
+          cursor: pointer;
+          border: none;
         }
-        .spinner {
-          animation: rotate 1s linear infinite;
-        }
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
+        .btn-secondary-premium:hover { background-color: #e2e8f0; }
+
+        .spinner { animation: rotate 1s linear infinite; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
