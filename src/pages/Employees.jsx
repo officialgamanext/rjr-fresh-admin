@@ -26,7 +26,8 @@ import {
   doc, 
   updateDoc 
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { db, secondaryAuth } from '../firebase';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import '../css/pages/dashboard.css';
@@ -49,6 +50,8 @@ const Employees = () => {
     email: '',
     address: '',
     role: '',
+    username: '',
+    password: '',
     emergencyContact: {
       relation: '',
       name: '',
@@ -90,6 +93,8 @@ const Employees = () => {
         email: employee.email || '',
         address: employee.address,
         role: employee.role,
+        username: employee.username || '',
+        password: '', // Don't show existing password for security
         emergencyContact: employee.emergencyContact || { relation: '', name: '', mobile: '' }
       });
     } else {
@@ -100,6 +105,8 @@ const Employees = () => {
         email: '',
         address: '',
         role: '',
+        username: '',
+        password: '',
         emergencyContact: { relation: '', name: '', mobile: '' }
       });
     }
@@ -118,22 +125,40 @@ const Employees = () => {
     
     try {
       if (selectedEmployee) {
+        // Update Firestore
         await updateDoc(doc(db, 'employees', selectedEmployee.id), {
-          ...formData,
+          name: formData.name,
+          mobile: formData.mobile,
+          email: formData.email,
+          address: formData.address,
+          role: formData.role,
+          username: formData.username,
+          emergencyContact: formData.emergencyContact,
           updatedAt: new Date().toISOString()
         });
         toast.success('Employee updated!', { id: saveToast });
       } else {
+        // 1. Create Auth User
+        const authEmail = `${formData.username.toLowerCase().trim()}@rjrfresh.com`;
+        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, authEmail, formData.password);
+        const uid = userCredential.user.uid;
+
+        // 2. Save to Firestore
         await addDoc(collection(db, 'employees'), {
           ...formData,
+          uid: uid,
+          authEmail: authEmail,
           createdAt: new Date().toISOString()
         });
-        toast.success('Employee added!', { id: saveToast });
+        toast.success('Employee added with credentials!', { id: saveToast });
       }
       handleCloseModal();
     } catch (error) {
       console.error("Error saving employee:", error);
-      toast.error('Failed to save employee', { id: saveToast });
+      let errorMsg = 'Failed to save employee';
+      if (error.code === 'auth/email-already-in-use') errorMsg = 'Username already exists!';
+      if (error.code === 'auth/weak-password') errorMsg = 'Password is too weak!';
+      toast.error(errorMsg, { id: saveToast });
     } finally {
       setSaving(false);
     }
@@ -292,6 +317,23 @@ const Employees = () => {
                         <textarea name="address" className="form-control premium-input" rows="3" value={formData.address} onChange={handleInputChange} required placeholder="Complete residence address"></textarea>
                       </div>
                     </div>
+
+                    {!selectedEmployee && (
+                      <div className="credentials-box" style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #f1f5f9' }}>
+                        <h4 className="sub-section-title"><User size={16} /> App Credentials</h4>
+                        <div className="form-row-grid">
+                          <div className="form-group">
+                            <label>Username</label>
+                            <input type="text" name="username" className="form-control premium-input" value={formData.username} onChange={handleInputChange} required placeholder="e.g. siva_krishna" style={{ paddingLeft: '14px !important' }} />
+                          </div>
+                          <div className="form-group">
+                            <label>Password</label>
+                            <input type="password" name="password" className="form-control premium-input" value={formData.password} onChange={handleInputChange} required placeholder="Min 6 characters" style={{ paddingLeft: '14px !important' }} />
+                          </div>
+                        </div>
+                        <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Login email will be <b>{formData.username || 'username'}@rjrfresh.com</b></p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="modal-section">
