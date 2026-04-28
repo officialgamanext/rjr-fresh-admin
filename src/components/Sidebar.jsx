@@ -17,7 +17,9 @@ const Sidebar = () => {
   const navItems = [
     { title: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
     { title: 'Shops', icon: <Store />, path: '/shops' },
+    { title: 'Shop Orders', icon: <Package />, path: '/shop-orders' },
     { title: 'Customers', icon: <Users />, path: '/customers' },
+    { title: 'Customer Orders', icon: <Package />, path: '/customer-orders' },
     { title: 'Customer Prices', icon: <Tag />, path: '/customer-prices' },
     { title: 'Items', icon: <Package />, path: '/items' },
     { title: 'Item Categories', icon: <Layers />, path: '/categories' },

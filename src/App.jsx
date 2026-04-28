@@ -10,7 +10,9 @@ import PriceListDetails from './pages/PriceListDetails';
 import Categories from './pages/Categories';
 import Payments from './pages/Payments';
 import ShopDetails from './pages/ShopDetails';
+import ShopOrders from './pages/ShopOrders';
 import CustomerDetails from './pages/CustomerDetails';
+import CustomerOrders from './pages/CustomerOrders';
 import Employees from './pages/Employees';
 import EmployeeDetails from './pages/EmployeeDetails';
 import CustomerPrices from './pages/CustomerPrices';
@@ -28,8 +30,10 @@ function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="shops" element={<Shops />} />
+              <Route path="shop-orders" element={<ShopOrders />} />
               <Route path="shops/:id" element={<ShopDetails />} />
               <Route path="customers" element={<Customers />} />
+              <Route path="customer-orders" element={<CustomerOrders />} />
               <Route path="customers/:id" element={<CustomerDetails />} />
               <Route path="customer-prices" element={<CustomerPrices />} />
               <Route path="items" element={<Items />} />
