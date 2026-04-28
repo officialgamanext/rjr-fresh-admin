@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Loader2, Store, Edit2 } from 'lucide-react';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import '../css/pages/dashboard.css';
@@ -12,10 +12,76 @@ const ShopOrders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const [dateFilter, setDateFilter] = useState('This Month');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+
+  const getDateRange = (filter) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    switch(filter) {
+      case 'Today': return { start: today, end: endOfToday };
+      case 'Yesterday': {
+        const start = new Date(today); start.setDate(today.getDate() - 1);
+        const end = new Date(endOfToday); end.setDate(endOfToday.getDate() - 1);
+        return { start, end };
+      }
+      case 'This Week': {
+        const start = new Date(today); start.setDate(today.getDate() - today.getDay()); 
+        return { start, end: endOfToday };
+      }
+      case 'Last Week': {
+        const start = new Date(today); start.setDate(today.getDate() - today.getDay() - 7);
+        const end = new Date(endOfToday); end.setDate(today.getDate() - today.getDay() - 1);
+        return { start, end };
+      }
+      case 'This Month': {
+        const start = new Date(today.getFullYear(), today.getMonth(), 1);
+        return { start, end: endOfToday };
+      }
+      case 'Last Month': {
+        const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const end = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+        return { start, end };
+      }
+      case 'This Year': {
+        const start = new Date(today.getFullYear(), 0, 1);
+        return { start, end: endOfToday };
+      }
+      case 'Last Year': {
+        const start = new Date(today.getFullYear() - 1, 0, 1);
+        const end = new Date(today.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+        return { start, end };
+      }
+      default: return { start: null, end: null };
+    }
+  };
+
   useEffect(() => {
-    // We fetch all orders and then sort locally since composite indexes may not be available.
-    // Given orderBy might fail without indexes, let's fetch without orderBy and sort.
-    const q = query(collection(db, 'orders'));
+    let startIso, endIso;
+    if (dateFilter === 'Custom') {
+       if (customStart && customEnd) {
+         startIso = new Date(customStart).toISOString();
+         const endD = new Date(customEnd); endD.setHours(23, 59, 59, 999);
+         endIso = endD.toISOString();
+       }
+    } else {
+       const { start, end } = getDateRange(dateFilter);
+       if (start && end) {
+         startIso = start.toISOString();
+         endIso = end.toISOString();
+       }
+    }
+
+    let q = query(collection(db, 'orders'));
+    if (startIso && endIso) {
+       q = query(collection(db, 'orders'), where('createdAt', '>=', startIso), where('createdAt', '<=', endIso));
+    }
+
+    setLoading(true);
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       data.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -26,7 +92,7 @@ const ShopOrders = () => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [dateFilter, customStart, customEnd]);
 
   const filteredOrders = orders.filter(order => 
     order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,6 +113,33 @@ const ShopOrders = () => {
             <Store color="var(--primary-color)" /> Shop Orders
           </h1>
           <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0' }}>Manage all B2B orders</p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <select 
+            className="form-control" 
+            value={dateFilter} 
+            onChange={(e) => setDateFilter(e.target.value)}
+            style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
+          >
+            <option value="Today">Today</option>
+            <option value="Yesterday">Yesterday</option>
+            <option value="This Week">This Week</option>
+            <option value="Last Week">Last Week</option>
+            <option value="This Month">This Month</option>
+            <option value="Last Month">Last Month</option>
+            <option value="This Year">This Year</option>
+            <option value="Last Year">Last Year</option>
+            <option value="Custom">Custom Date</option>
+          </select>
+
+          {dateFilter === 'Custom' && (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#fff', padding: '6px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+              <input type="date" className="form-control" value={customStart} onChange={(e) => setCustomStart(e.target.value)} style={{ border: 'none', padding: '4px' }} />
+              <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>to</span>
+              <input type="date" className="form-control" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} style={{ border: 'none', padding: '4px' }} />
+            </div>
+          )}
         </div>
       </div>
 
