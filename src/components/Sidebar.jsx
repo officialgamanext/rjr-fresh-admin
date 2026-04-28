@@ -10,7 +10,8 @@ import {
   ChevronRight,
   Layers,
   Tag,
-  LogOut
+  LogOut,
+  Box
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +37,7 @@ const Sidebar = () => {
     { title: 'Customers', icon: <Users />, path: '/customers' },
     { title: 'Customer Orders', icon: <Package />, path: '/customer-orders' },
     { title: 'Customer Prices', icon: <Tag />, path: '/customer-prices' },
+    { title: 'Batches', icon: <Box />, path: '/batches' },
     { title: 'Items', icon: <Package />, path: '/items' },
     { title: 'Item Categories', icon: <Layers />, path: '/categories' },
     { title: 'Employees', icon: <Users />, path: '/employees' },

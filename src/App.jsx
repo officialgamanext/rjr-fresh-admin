@@ -11,6 +11,7 @@ import Categories from './pages/Categories';
 import Payments from './pages/Payments';
 import ShopDetails from './pages/ShopDetails';
 import ShopOrders from './pages/ShopOrders';
+import Batches from './pages/Batches';
 import CustomerDetails from './pages/CustomerDetails';
 import CustomerOrders from './pages/CustomerOrders';
 import Employees from './pages/Employees';
@@ -42,6 +43,7 @@ function App() {
                 <Route path="customers/:id" element={<CustomerDetails />} />
                 <Route path="customer-prices" element={<CustomerPrices />} />
                 <Route path="items" element={<Items />} />
+                <Route path="batches" element={<Batches />} />
                 <Route path="categories" element={<Categories />} />
                 <Route path="pricelist" element={<PriceList />} />
                  <Route path="pricelist/:id" element={<PriceListDetails />} />
