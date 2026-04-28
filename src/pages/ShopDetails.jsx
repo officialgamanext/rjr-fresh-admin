@@ -143,7 +143,7 @@ const ShopDetails = () => {
   }, [activeTab, shop?.priceListId]);
 
   useEffect(() => {
-    if (activeTab === 'orders') {
+    if (id) {
       setLoadingOrders(true);
       const q = query(
         collection(db, 'orders'), 
@@ -162,10 +162,10 @@ const ShopDetails = () => {
       });
       return () => unsubscribe();
     }
-  }, [activeTab, id]);
+  }, [id]);
 
   useEffect(() => {
-    if (activeTab === 'visits' && id) {
+    if (id) {
       setLoadingVisits(true);
       const q = query(
         collection(db, 'checkins'), 
@@ -189,10 +189,10 @@ const ShopDetails = () => {
       });
       return () => unsubscribe();
     }
-  }, [activeTab, id]);
+  }, [id]);
 
   useEffect(() => {
-    if (activeTab === 'payments' && id) {
+    if (id) {
       setLoadingPayments(true);
       const q = query(collection(db, 'payments'), where('shopId', '==', id));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -206,10 +206,10 @@ const ShopDetails = () => {
       });
       return () => unsubscribe();
     }
-  }, [activeTab, id]);
+  }, [id]);
 
   useEffect(() => {
-    if (activeTab === 'returns' && id) {
+    if (id) {
       setLoadingReturns(true);
       const q = query(collection(db, 'returns'), where('shopId', '==', id));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -223,10 +223,10 @@ const ShopDetails = () => {
       });
       return () => unsubscribe();
     }
-  }, [activeTab, id]);
+  }, [id]);
 
   useEffect(() => {
-    if (activeTab === 'credits' && id) {
+    if (id) {
       setLoadingCreditHistory(true);
       const q = query(collection(db, 'creditHistory'), where('shopId', '==', id));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -240,7 +240,7 @@ const ShopDetails = () => {
       });
       return () => unsubscribe();
     }
-  }, [activeTab, id]);
+  }, [id]);
 
   useEffect(() => {
     // Fetch categories for the order modal
@@ -294,6 +294,15 @@ const ShopDetails = () => {
 
   const assignedPriceList = allPriceLists.find(l => l.id === shop.priceListId);
 
+  // Analytics Calculations
+  const totalOrdersCount = orders.length;
+  const returnOrdersCount = returns.length;
+  const paymentReceivedTotal = orders.reduce((sum, order) => sum + (parseFloat(order.paymentReceived) || 0), 0);
+  const paymentPendingTotal = orders.reduce((sum, order) => {
+    const pending = (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0);
+    return pending > 0 ? sum + pending : sum;
+  }, 0);
+
   return (
     <div className="shop-details-page">
       <div className="page-header" style={{ marginBottom: '24px' }}>
@@ -307,6 +316,33 @@ const ShopDetails = () => {
             </span>
             {shop.name}
           </h1>
+        </div>
+      </div>
+
+      <div className="analytics-top-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#e0f2fe', border: '1px solid #bae6fd', boxShadow: 'none' }}>
+          <span style={{ fontSize: '12px', color: '#0369a1', textTransform: 'uppercase', fontWeight: 600 }}>Orders Count</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#0c4a6e' }}>{totalOrdersCount}</span>
+        </div>
+        <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#ffedd5', border: '1px solid #fed7aa', boxShadow: 'none' }}>
+          <span style={{ fontSize: '12px', color: '#c2410c', textTransform: 'uppercase', fontWeight: 600 }}>Return Orders</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#7c2d12' }}>{returnOrdersCount}</span>
+        </div>
+        <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#dcfce7', border: '1px solid #bbf7d0', boxShadow: 'none' }}>
+          <span style={{ fontSize: '12px', color: '#15803d', textTransform: 'uppercase', fontWeight: 600 }}>Payment Received</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#14532d' }}>₹{paymentReceivedTotal.toFixed(2)}</span>
+        </div>
+        <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#fee2e2', border: '1px solid #fecaca', boxShadow: 'none' }}>
+          <span style={{ fontSize: '12px', color: '#b91c1c', textTransform: 'uppercase', fontWeight: 600 }}>Payment Pending</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#7f1d1d' }}>₹{paymentPendingTotal.toFixed(2)}</span>
+        </div>
+        <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#e0e7ff', border: '1px solid #c7d2fe', boxShadow: 'none' }}>
+          <span style={{ fontSize: '12px', color: '#4338ca', textTransform: 'uppercase', fontWeight: 600 }}>Available Credits</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#312e81' }}>₹{shop.credits || 0}</span>
+        </div>
+        <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#fae8ff', border: '1px solid #f5d0fe', boxShadow: 'none' }}>
+          <span style={{ fontSize: '12px', color: '#a21caf', textTransform: 'uppercase', fontWeight: 600 }}>Shop Visits</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#701a75' }}>{visits.length}</span>
         </div>
       </div>
 
