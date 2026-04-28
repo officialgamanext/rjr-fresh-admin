@@ -9,11 +9,26 @@ import {
   CreditCard,
   ChevronRight,
   Layers,
-  Tag
+  Tag,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import '../css/components/sidebar.css';
 
 const Sidebar = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
   const navItems = [
     { title: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
     { title: 'Shops', icon: <Store />, path: '/shops' },
@@ -52,6 +67,30 @@ const Sidebar = () => {
             ))}
           </ul>
         </div>
+      </div>
+
+      <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
+        <button 
+          onClick={handleLogout}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+            padding: '12px', background: 'rgba(239, 68, 68, 0.1)',
+            color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.2)',
+            borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+            fontWeight: 600, fontSize: '14px'
+          }}
+          onMouseOver={(e) => {
+             e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+             e.currentTarget.style.color = '#fff';
+          }}
+          onMouseOut={(e) => {
+             e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+             e.currentTarget.style.color = '#fca5a5';
+          }}
+        >
+          <LogOut size={18} />
+          Sign Out
+        </button>
       </div>
     </aside>
   );
