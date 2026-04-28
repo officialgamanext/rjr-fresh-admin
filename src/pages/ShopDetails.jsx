@@ -330,11 +330,11 @@ const ShopDetails = () => {
         </div>
         <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#dcfce7', border: '1px solid #bbf7d0', boxShadow: 'none' }}>
           <span style={{ fontSize: '12px', color: '#15803d', textTransform: 'uppercase', fontWeight: 600 }}>Payment Received</span>
-          <span style={{ fontSize: '24px', fontWeight: 700, color: '#14532d' }}>₹{paymentReceivedTotal.toFixed(2)}</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#14532d' }}>₹{paymentReceivedTotal}</span>
         </div>
         <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#fee2e2', border: '1px solid #fecaca', boxShadow: 'none' }}>
           <span style={{ fontSize: '12px', color: '#b91c1c', textTransform: 'uppercase', fontWeight: 600 }}>Payment Pending</span>
-          <span style={{ fontSize: '24px', fontWeight: 700, color: '#7f1d1d' }}>₹{paymentPendingTotal.toFixed(2)}</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: '#7f1d1d' }}>₹{paymentPendingTotal}</span>
         </div>
         <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#e0e7ff', border: '1px solid #c7d2fe', boxShadow: 'none' }}>
           <span style={{ fontSize: '12px', color: '#4338ca', textTransform: 'uppercase', fontWeight: 600 }}>Available Credits</span>
