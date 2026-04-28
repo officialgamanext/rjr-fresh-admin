@@ -183,6 +183,48 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
   const totalSubtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
   const grandTotal = Math.max(0, totalSubtotal - (parseFloat(discount) || 0));
 
+  const sendPushNotification = async (employeeId, orderId, customerName) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee || !employee.pushToken) {
+      console.log("No push token found for employee:", employeeId);
+      return;
+    }
+
+    try {
+      console.log(`Admin: Attempting to notify ${employee.name}...`);
+      const message = {
+        to: employee.pushToken,
+        sound: 'default',
+        title: 'New Order Assigned!',
+        body: `Order #${orderId.slice(-6).toUpperCase()} for ${customerName} has been assigned to you.`,
+        data: { screen: 'customer_orders' },
+        priority: 'high',
+        channelId: 'orders',
+      };
+
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(message),
+      });
+      
+      const result = await response.json();
+      console.log("Admin: Expo Notification Response:", result);
+      
+      if (result.errors) {
+        console.error("Admin: Expo Notification Error:", result.errors);
+      } else {
+        toast.success(`Notification sent to ${employee.name}`);
+      }
+    } catch (error) {
+      console.error("Admin: Network error sending notification:", error);
+    }
+  };
+
   const handleSaveOrder = async () => {
     if (items.some(item => !item.itemId || item.quantity <= 0)) {
       toast.error("Please fill all item details correctly");
@@ -215,6 +257,8 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         status: orderStatus
       };
 
+      const customerName = shop ? shop.name : customer?.name;
+
       if (shop) {
         orderData.shopId = shop.id;
         orderData.shopName = shop.name;
@@ -227,13 +271,26 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
 
       const collectionName = customer ? 'customerOrders' : 'orders';
 
+      let finalOrderId = orderToEdit?.id;
+
       if (orderToEdit) {
         await updateDoc(doc(db, collectionName, orderToEdit.id), orderData);
         toast.success("Order updated successfully", { id: saveToast });
+        
+        // Notify if assignedTo changed or was just added
+        if (assignedTo && assignedTo !== orderToEdit.assignedTo) {
+          sendPushNotification(assignedTo, orderToEdit.id, customerName);
+        }
       } else {
         orderData.createdAt = new Date().toISOString();
-        await addDoc(collection(db, collectionName), orderData);
+        const docRef = await addDoc(collection(db, collectionName), orderData);
+        finalOrderId = docRef.id;
         toast.success("Order saved successfully", { id: saveToast });
+        
+        // Notify the assigned employee
+        if (assignedTo) {
+          sendPushNotification(assignedTo, docRef.id, customerName);
+        }
       }
       onClose();
     } catch (error) {

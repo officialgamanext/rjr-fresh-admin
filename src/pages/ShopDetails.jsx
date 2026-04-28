@@ -63,6 +63,8 @@ const ShopDetails = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [visits, setVisits] = useState([]);
+  const [loadingVisits, setLoadingVisits] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -142,6 +144,33 @@ const ShopDetails = () => {
         console.error("Firestore error:", error);
         setLoadingOrders(false);
         toast.error("Failed to load orders.");
+      });
+      return () => unsubscribe();
+    }
+  }, [activeTab, id]);
+
+  useEffect(() => {
+    if (activeTab === 'visits' && id) {
+      setLoadingVisits(true);
+      const q = query(
+        collection(db, 'checkins'), 
+        where('shopId', '==', id)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const visitsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Sort locally by timestamp desc if available
+        visitsData.sort((a, b) => {
+          if (a.timestamp && b.timestamp) {
+             return b.timestamp.toMillis() - a.timestamp.toMillis();
+          }
+          return 0;
+        });
+        setVisits(visitsData);
+        setLoadingVisits(false);
+      }, (error) => {
+        console.error("Firestore error:", error);
+        setLoadingVisits(false);
+        toast.error("Failed to load visits.");
       });
       return () => unsubscribe();
     }
@@ -419,12 +448,50 @@ const ShopDetails = () => {
           </div>
         )}
 
+        {activeTab === 'visits' && (
+          <div className="card">
+            <div className="card-header">
+              <h3>Visit History</h3>
+            </div>
+            <div className="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>DATE & TIME</th>
+                    <th>EMPLOYEE NAME</th>
+                    <th>MOBILE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingVisits ? (
+                    <tr><td colSpan="3" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" /></td></tr>
+                  ) : visits.length === 0 ? (
+                    <tr><td colSpan="3" style={{ textAlign: 'center', padding: '60px' }}>No visits found for this shop.</td></tr>
+                  ) : (
+                    visits.map(visit => (
+                      <tr key={visit.id}>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 600 }}>{visit.date || 'N/A'}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{visit.time || 'N/A'}</span>
+                          </div>
+                        </td>
+                        <td style={{ fontWeight: 500 }}>{visit.employeeName || visit.username || 'Unknown'}</td>
+                        <td>{visit.employeeMobile || 'N/A'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Other Tab Placeholders */}
-        {['payments', 'credits', 'visits'].includes(activeTab) && (
+        {['payments', 'credits'].includes(activeTab) && (
           <div className="empty-tab-card">
             {activeTab === 'payments' && <CreditCard size={48} />}
             {activeTab === 'credits' && <Wallet size={48} />}
-            {activeTab === 'visits' && <History size={48} />}
             <h3>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Coming Soon</h3>
             <p>We are still working on this section. Check back soon!</p>
           </div>
