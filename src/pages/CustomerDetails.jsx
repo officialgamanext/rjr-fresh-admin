@@ -160,7 +160,7 @@ const CustomerDetails = () => {
   const handleDeleteOrder = async (orderId) => {
     if (window.confirm("Are you sure you want to delete this order?")) {
       try {
-        await deleteDoc(doc(db, 'orders', orderId));
+        await deleteDoc(doc(db, 'customerOrders', orderId));
         toast.success('Order deleted');
       } catch (error) {
         toast.error("Error deleting order");
@@ -426,14 +426,14 @@ const CustomerDetails = () => {
                         </td>
                         <td>
                           <div style={{ display: 'flex', gap: '12px' }}>
-                            <button className="action-btn-ui" onClick={() => { setEditingOrder(order); setIsViewOnly(true); setIsOrderModalOpen(true); }}>
+                            <button className="action-btn-ui" onClick={() => { setEditingOrder(order); setIsViewOnly(true); setIsOrderModalOpen(true); }} title="View">
                               <Eye size={16} color="var(--primary-color)" />
                             </button>
-                            <button className="action-btn-ui" onClick={() => { setEditingOrder(order); setIsViewOnly(false); setIsOrderModalOpen(true); }}>
-                              <Edit2 size={16} color="var(--warning-color)" />
+                            <button className="action-btn-ui" onClick={() => { setEditingOrder(order); setIsViewOnly(false); setIsOrderModalOpen(true); }} title="Edit">
+                              <Edit2 size={16} color="var(--warning)" />
                             </button>
-                            <button className="action-btn-ui" onClick={() => handleDeleteOrder(order.id)}>
-                              <Trash2 size={16} color="var(--danger-color)" />
+                            <button className="action-btn-ui" onClick={() => handleDeleteOrder(order.id)} title="Delete">
+                              <Trash2 size={16} color="var(--danger)" />
                             </button>
                           </div>
                         </td>
