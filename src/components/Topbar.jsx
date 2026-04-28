@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Menu, 
-  Search, 
-  Bell, 
-  Moon, 
-  Maximize, 
+import {
+  Menu,
+  Search,
+  Bell,
+  Moon,
+  Maximize,
   Plus,
   Clock,
   MapPin,
@@ -38,7 +38,7 @@ const Topbar = () => {
   const handleAddLocation = async (e) => {
     e.preventDefault();
     if (!newLocationName.trim()) return;
-    
+
     try {
       await addLocation(newLocationName.trim());
       setNewLocationName('');
@@ -49,12 +49,12 @@ const Topbar = () => {
     }
   };
 
-  const filteredLocations = locations.filter(loc => 
+  const filteredLocations = locations.filter(loc =>
     loc.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const selectedLocName = selectedLocation === 'all' 
-    ? 'All Locations' 
+  const selectedLocName = selectedLocation === 'all'
+    ? 'All Locations'
     : locations.find(l => l.id === selectedLocation)?.name || 'Select Location';
 
   return (
@@ -63,10 +63,10 @@ const Topbar = () => {
         <button className="menu-toggle">
           <Menu size={20} />
         </button>
-        
+
         <div className="location-selector-container" ref={dropdownRef}>
-          <button 
-            className="location-btn" 
+          <button
+            className="location-btn"
             onClick={() => setIsOpen(!isOpen)}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -80,9 +80,9 @@ const Topbar = () => {
             <div className="location-dropdown">
               <div className="dropdown-search">
                 <Search size={16} />
-                <input 
-                  type="text" 
-                  placeholder="Search locations..." 
+                <input
+                  type="text"
+                  placeholder="Search locations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   autoFocus
@@ -90,7 +90,7 @@ const Topbar = () => {
               </div>
 
               <div className="dropdown-list">
-                <div 
+                <div
                   className={`dropdown-item ${selectedLocation === 'all' ? 'active' : ''}`}
                   onClick={() => {
                     changeLocation('all');
@@ -104,7 +104,7 @@ const Topbar = () => {
                   {selectedLocation === 'all' && <Check size={14} />}
                 </div>
                 {filteredLocations.map(loc => (
-                  <div 
+                  <div
                     key={loc.id}
                     className={`dropdown-item ${selectedLocation === loc.id ? 'active' : ''}`}
                     onClick={() => {
@@ -129,9 +129,9 @@ const Topbar = () => {
                   </button>
                 ) : (
                   <form className="add-location-form" onSubmit={handleAddLocation}>
-                    <input 
-                      type="text" 
-                      placeholder="Location name" 
+                    <input
+                      type="text"
+                      placeholder="Location name"
                       value={newLocationName}
                       onChange={(e) => setNewLocationName(e.target.value)}
                       autoFocus
@@ -151,8 +151,8 @@ const Topbar = () => {
           )}
         </div>
       </div>
-      
-      <div className="topbar-right">
+
+      {/* <div className="topbar-right">
         <div className="topbar-actions">
           <button className="action-btn"><Search size={20} /></button>
           <button className="action-btn"><Maximize size={20} /></button>
@@ -174,7 +174,7 @@ const Topbar = () => {
             className="user-avatar" 
           />
         </div>
-      </div>
+      </div> */}
     </header>
   );
 };

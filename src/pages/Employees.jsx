@@ -14,7 +14,8 @@ import {
   MapPin,
   Briefcase,
   Eye,
-  Heart
+  Heart,
+  Lock
 } from 'lucide-react';
 import { 
   collection, 
@@ -56,6 +57,31 @@ const Employees = () => {
       relation: '',
       name: '',
       mobile: ''
+    },
+    access: {
+      admin: {
+        dashboard: false,
+        shops: false,
+        shopOrders: false,
+        customers: false,
+        customerOrders: false,
+        customerPrices: false,
+        batches: false,
+        items: false,
+        categories: false,
+        employees: false,
+        priceList: false,
+        payments: false
+      },
+      app: {
+        enabled: false,
+        saleOrders: false,
+        saleOrdersList: false,
+        customerOrders: false,
+        payments: false,
+        returnOrders: false,
+        shops: false
+      }
     }
   });
 
@@ -84,6 +110,19 @@ const Employees = () => {
     }
   };
 
+  const handleAccessChange = (type, field, checked) => {
+    setFormData(prev => ({
+      ...prev,
+      access: {
+        ...prev.access,
+        [type]: {
+          ...prev.access[type],
+          [field]: checked
+        }
+      }
+    }));
+  };
+
   const handleOpenModal = (employee = null) => {
     if (employee) {
       setSelectedEmployee(employee);
@@ -95,7 +134,11 @@ const Employees = () => {
         role: employee.role,
         username: employee.username || '',
         password: '', // Don't show existing password for security
-        emergencyContact: employee.emergencyContact || { relation: '', name: '', mobile: '' }
+        emergencyContact: employee.emergencyContact || { relation: '', name: '', mobile: '' },
+        access: employee.access || {
+          admin: { dashboard: false, shops: false, shopOrders: false, customers: false, customerOrders: false, customerPrices: false, batches: false, items: false, categories: false, employees: false, priceList: false, payments: false },
+          app: { enabled: false, saleOrders: false, saleOrdersList: false, customerOrders: false, payments: false, returnOrders: false, shops: false }
+        }
       });
     } else {
       setSelectedEmployee(null);
@@ -107,7 +150,11 @@ const Employees = () => {
         role: '',
         username: '',
         password: '',
-        emergencyContact: { relation: '', name: '', mobile: '' }
+        emergencyContact: { relation: '', name: '', mobile: '' },
+        access: {
+          admin: { dashboard: false, shops: false, shopOrders: false, customers: false, customerOrders: false, customerPrices: false, batches: false, items: false, categories: false, employees: false, priceList: false, payments: false },
+          app: { enabled: false, saleOrders: false, saleOrdersList: false, customerOrders: false, payments: false, returnOrders: false, shops: false }
+        }
       });
     }
     setIsModalOpen(true);
@@ -134,6 +181,7 @@ const Employees = () => {
           role: formData.role,
           username: formData.username,
           emergencyContact: formData.emergencyContact,
+          access: formData.access,
           updatedAt: new Date().toISOString()
         });
         toast.success('Employee updated!', { id: saveToast });
@@ -282,7 +330,7 @@ const Employees = () => {
               </div>
               <button className="close-btn" onClick={handleCloseModal}><X size={28} /></button>
             </div>
-            <form onSubmit={handleSaveEmployee}>
+            <form onSubmit={handleSaveEmployee} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
               <div className="modal-body">
                 <div className="modal-sections-grid">
                   <div className="modal-section">
@@ -373,6 +421,70 @@ const Employees = () => {
                     </div>
                   </div>
                 </div>
+
+                <div className="modal-section" style={{ maxWidth: '1200px', margin: '24px auto 0' }}>
+                  <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+                    <Lock size={18} /> Access Permissions
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    
+                    {/* Admin Access Column */}
+                    <div className="access-column" style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                      <h4 style={{ margin: '0 0 20px 0', fontSize: '15px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)' }}></div>
+                        Admin Panel Access
+                      </h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px' }}>
+                        {Object.keys(formData.access.admin).map((key) => (
+                          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', color: '#475569', fontWeight: 500 }}>
+                            <input 
+                              type="checkbox" 
+                              checked={formData.access.admin[key]} 
+                              onChange={(e) => handleAccessChange('admin', key, e.target.checked)}
+                              style={{ width: '18px', height: '18px', accentColor: 'var(--primary-color)', cursor: 'pointer' }}
+                            />
+                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* App Access Column */}
+                    <div className="access-column" style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#8b5cf6' }}></div>
+                          Mobile App Access
+                        </h4>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, color: '#8b5cf6', cursor: 'pointer', background: 'rgba(139, 92, 246, 0.1)', padding: '6px 12px', borderRadius: '20px' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.access.app.enabled} 
+                            onChange={(e) => handleAccessChange('app', 'enabled', e.target.checked)}
+                            style={{ width: '16px', height: '16px', accentColor: '#8b5cf6', cursor: 'pointer' }}
+                          />
+                          Enable App Access
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', opacity: formData.access.app.enabled ? 1 : 0.4, pointerEvents: formData.access.app.enabled ? 'auto' : 'none', transition: 'opacity 0.2s' }}>
+                        {Object.keys(formData.access.app).filter(k => k !== 'enabled').map((key) => (
+                          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', color: '#475569', fontWeight: 500 }}>
+                            <input 
+                              type="checkbox" 
+                              checked={formData.access.app[key]} 
+                              onChange={(e) => handleAccessChange('app', key, e.target.checked)}
+                              style={{ width: '18px', height: '18px', accentColor: '#8b5cf6', cursor: 'pointer' }}
+                            />
+                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                  </div>
+                </div>
+
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn-secondary-premium" onClick={handleCloseModal}>Cancel</button>
