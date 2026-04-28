@@ -41,6 +41,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
   const [priceMap, setPriceMap] = useState({}); // { itemId: price }
   const [discount, setDiscount] = useState(0);
   const [paymentReceived, setPaymentReceived] = useState(0);
+  const [creditsToUse, setCreditsToUse] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [employees, setEmployees] = useState([]);
@@ -107,6 +108,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
             }));
             setDiscount(orderToEdit.discount || 0);
             setPaymentReceived(orderToEdit.paymentReceived || 0);
+            setCreditsToUse(orderToEdit.creditsUsed || 0);
             setOrderStatus(orderToEdit.status || 'Ordered');
             setPaymentStatus(orderToEdit.paymentStatus || 'Unpaid');
             setPaymentMethod(orderToEdit.paymentMethod || 'Cash');
@@ -123,6 +125,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
             }]);
             setDiscount(0);
             setPaymentReceived(0);
+            setCreditsToUse(0);
             setOrderStatus('Ordered');
             setPaymentStatus('Unpaid');
             setPaymentMethod('Cash');
@@ -181,7 +184,9 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
   };
 
   const totalSubtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
-  const grandTotal = Math.max(0, totalSubtotal - (parseFloat(discount) || 0));
+  const subtotalAfterDiscount = Math.max(0, totalSubtotal - (parseFloat(discount) || 0));
+  const validCreditsUsed = Math.min(parseFloat(creditsToUse) || 0, entity?.credits || 0, subtotalAfterDiscount);
+  const grandTotal = Math.max(0, subtotalAfterDiscount - validCreditsUsed);
 
   const sendPushNotification = async (employeeId, orderId, customerName) => {
     const employee = employees.find(e => e.id === employeeId);
@@ -246,6 +251,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         })),
         totalSubtotal,
         discount: parseFloat(discount) || 0,
+        creditsUsed: validCreditsUsed,
         grandTotal,
         paymentReceived: parseFloat(paymentReceived) || 0,
         paymentStatus,
@@ -285,6 +291,19 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         orderData.createdAt = new Date().toISOString();
         const docRef = await addDoc(collection(db, collectionName), orderData);
         finalOrderId = docRef.id;
+        
+        if (validCreditsUsed > 0 && shop) {
+           const newCredits = (shop.credits || 0) - validCreditsUsed;
+           await updateDoc(doc(db, 'shops', shop.id), { credits: newCredits });
+           await addDoc(collection(db, 'creditHistory'), {
+             shopId: shop.id,
+             amount: validCreditsUsed,
+             type: 'used',
+             description: `Used for Order #${finalOrderId.slice(-6).toUpperCase()}`,
+             createdAt: new Date().toISOString()
+           });
+        }
+        
         toast.success("Order saved successfully", { id: saveToast });
         
         // Notify the assigned employee
@@ -441,6 +460,22 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                       />
                     </div>
                   </div>
+                  {(entity?.credits > 0 || orderToEdit?.creditsUsed > 0) && (
+                    <div className="summary-row" style={{ color: 'var(--primary-color)' }}>
+                      <span>Use Credits (Available: ₹{entity?.credits || 0})</span>
+                      <div className="input-with-icon">
+                        <IndianRupee size={14} />
+                        <input
+                          type="number"
+                          value={creditsToUse}
+                          onChange={(e) => setCreditsToUse(e.target.value)}
+                          placeholder="0.00"
+                          disabled={isViewOnly || !!orderToEdit}
+                          max={Math.min(entity?.credits || 0, subtotalAfterDiscount)}
+                        />
+                      </div>
+                    </div>
+                  )}
                   <div className="summary-row grand-total">
                     <span>Grand Total</span>
                     <span className="value">₹{grandTotal.toFixed(2)}</span>

@@ -36,7 +36,9 @@ import {
   Edit2,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  RefreshCw,
+  CreditCard as CreditCardIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import '../css/pages/dashboard.css';
@@ -44,6 +46,8 @@ import '../css/components/table.css';
 import '../css/components/modal.css';
 import '../css/pages/shop-details.css';
 import OrderModal from '../components/modals/OrderModal';
+import PaymentModal from '../components/modals/PaymentModal';
+import ReturnModal from '../components/modals/ReturnModal';
 
 const ShopDetails = () => {
   const { id } = useParams();
@@ -66,6 +70,16 @@ const ShopDetails = () => {
   const [visits, setVisits] = useState([]);
   const [loadingVisits, setLoadingVisits] = useState(false);
 
+  const [payments, setPayments] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [returns, setReturns] = useState([]);
+  const [loadingReturns, setLoadingReturns] = useState(false);
+  const [creditHistory, setCreditHistory] = useState([]);
+  const [loadingCreditHistory, setLoadingCreditHistory] = useState(false);
+  
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     latitude: '',
@@ -76,41 +90,42 @@ const ShopDetails = () => {
   });
 
   useEffect(() => {
-    const fetchShopAndLists = async () => {
+    const fetchLists = async () => {
       try {
-        const shopRef = doc(db, 'shops', id);
-        const shopSnap = await getDoc(shopRef);
-
-        if (shopSnap.exists()) {
-          const data = shopSnap.data();
-          setShop({ id: shopSnap.id, ...data });
-          setFormData({
-            name: data.name,
-            latitude: data.latitude,
-            longitude: data.longitude,
-            mobile: data.mobile,
-            address: data.address,
-            priceListId: data.priceListId || ''
-          });
-        } else {
-          toast.error("Shop not found");
-          navigate('/shops');
-          return;
-        }
-
         const listsSnap = await getDocs(collection(db, 'priceLists'));
         const lists = [];
         listsSnap.forEach(doc => lists.push({ id: doc.id, ...doc.data() }));
         setAllPriceLists(lists);
-
       } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
+        console.error("Error fetching price lists:", error);
       }
     };
+    fetchLists();
 
-    fetchShopAndLists();
+    const shopRef = doc(db, 'shops', id);
+    const unsubscribeShop = onSnapshot(shopRef, (shopSnap) => {
+      if (shopSnap.exists()) {
+        const data = shopSnap.data();
+        setShop({ id: shopSnap.id, ...data });
+        setFormData({
+          name: data.name,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          mobile: data.mobile,
+          address: data.address,
+          priceListId: data.priceListId || ''
+        });
+        setLoading(false);
+      } else {
+        toast.error("Shop not found");
+        navigate('/shops');
+      }
+    }, (error) => {
+      console.error("Error listening to shop:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribeShop();
   }, [id, navigate]);
 
   useEffect(() => {
@@ -171,6 +186,57 @@ const ShopDetails = () => {
         console.error("Firestore error:", error);
         setLoadingVisits(false);
         toast.error("Failed to load visits.");
+      });
+      return () => unsubscribe();
+    }
+  }, [activeTab, id]);
+
+  useEffect(() => {
+    if (activeTab === 'payments' && id) {
+      setLoadingPayments(true);
+      const q = query(collection(db, 'payments'), where('shopId', '==', id));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setPayments(data);
+        setLoadingPayments(false);
+      }, (err) => {
+        console.error(err);
+        setLoadingPayments(false);
+      });
+      return () => unsubscribe();
+    }
+  }, [activeTab, id]);
+
+  useEffect(() => {
+    if (activeTab === 'returns' && id) {
+      setLoadingReturns(true);
+      const q = query(collection(db, 'returns'), where('shopId', '==', id));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setReturns(data);
+        setLoadingReturns(false);
+      }, (err) => {
+        console.error(err);
+        setLoadingReturns(false);
+      });
+      return () => unsubscribe();
+    }
+  }, [activeTab, id]);
+
+  useEffect(() => {
+    if (activeTab === 'credits' && id) {
+      setLoadingCreditHistory(true);
+      const q = query(collection(db, 'creditHistory'), where('shopId', '==', id));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setCreditHistory(data);
+        setLoadingCreditHistory(false);
+      }, (err) => {
+        console.error(err);
+        setLoadingCreditHistory(false);
       });
       return () => unsubscribe();
     }
@@ -249,7 +315,8 @@ const ShopDetails = () => {
           <button className={`tab-item ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}><Info size={18} /> Details</button>
           <button className={`tab-item ${activeTab === 'pricing' ? 'active' : ''}`} onClick={() => setActiveTab('pricing')}><IndianRupee size={18} /> Pricing</button>
           <button className={`tab-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}><ShoppingCart size={18} /> Orders</button>
-          <button className={`tab-item ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}><CreditCard size={18} /> Payments</button>
+          <button className={`tab-item ${activeTab === 'returns' ? 'active' : ''}`} onClick={() => setActiveTab('returns')}><RefreshCw size={18} /> Returns</button>
+          <button className={`tab-item ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}><CreditCardIcon size={18} /> Payments</button>
           <button className={`tab-item ${activeTab === 'credits' ? 'active' : ''}`} onClick={() => setActiveTab('credits')}><Wallet size={18} /> Credits</button>
           <button className={`tab-item ${activeTab === 'visits' ? 'active' : ''}`} onClick={() => setActiveTab('visits')}><History size={18} /> Visits</button>
         </div>
@@ -431,6 +498,9 @@ const ShopDetails = () => {
                             <button className="action-btn-ui" onClick={() => { setEditingOrder(order); setIsViewOnly(true); setIsOrderModalOpen(true); }} title="View">
                               <Eye size={16} color="var(--primary-color)" />
                             </button>
+                            <button className="action-btn-ui" onClick={() => setActiveTab('payments')} title="Manage Payments">
+                              <CreditCardIcon size={16} color="var(--success)" />
+                            </button>
                             <button className="action-btn-ui" onClick={() => { setEditingOrder(order); setIsViewOnly(false); setIsOrderModalOpen(true); }} title="Edit">
                               <Edit size={16} color="var(--warning)" />
                             </button>
@@ -487,13 +557,128 @@ const ShopDetails = () => {
           </div>
         )}
 
-        {/* Other Tab Placeholders */}
-        {['payments', 'credits'].includes(activeTab) && (
-          <div className="empty-tab-card">
-            {activeTab === 'payments' && <CreditCard size={48} />}
-            {activeTab === 'credits' && <Wallet size={48} />}
-            <h3>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Coming Soon</h3>
-            <p>We are still working on this section. Check back soon!</p>
+        {activeTab === 'returns' && (
+          <div className="card">
+            <div className="card-header" style={{ justifyContent: 'space-between' }}>
+              <h3>Return Orders</h3>
+              <button className="btn-primary" onClick={() => setIsReturnModalOpen(true)}>
+                <RefreshCw size={18} /> Add Return
+              </button>
+            </div>
+            <div className="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ORDER ID</th>
+                    <th>DATE</th>
+                    <th>ITEMS RETURNED</th>
+                    <th>REFUND VALUE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingReturns ? (
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" /></td></tr>
+                  ) : returns.length === 0 ? (
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px' }}>No returns found.</td></tr>
+                  ) : (
+                    returns.map(ret => (
+                      <tr key={ret.id}>
+                        <td style={{ fontWeight: 600 }}>#{ret.orderId.slice(-6).toUpperCase()}</td>
+                        <td>{new Date(ret.createdAt).toLocaleString()}</td>
+                        <td>{ret.items?.length || 0} items</td>
+                        <td style={{ fontWeight: 600, color: 'var(--primary-color)' }}>₹{ret.totalRefund}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'payments' && (
+          <div className="card">
+            <div className="card-header" style={{ justifyContent: 'space-between' }}>
+              <h3>Payments History</h3>
+              <button className="btn-primary" onClick={() => setIsPaymentModalOpen(true)}>
+                <Plus size={18} /> Add Payment
+              </button>
+            </div>
+            <div className="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>DATE</th>
+                    <th>AMOUNT</th>
+                    <th>DISTRIBUTED</th>
+                    <th>UNALLOCATED</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingPayments ? (
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" /></td></tr>
+                  ) : payments.length === 0 ? (
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px' }}>No payments found.</td></tr>
+                  ) : (
+                    payments.map(payment => (
+                      <tr key={payment.id}>
+                        <td>{new Date(payment.createdAt).toLocaleString()}</td>
+                        <td style={{ fontWeight: 600 }}>₹{payment.amount}</td>
+                        <td style={{ color: 'var(--success)' }}>₹{payment.distributedAmount || 0}</td>
+                        <td style={{ color: 'var(--warning)' }}>₹{payment.unallocatedAmount || 0}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'credits' && (
+          <div className="card">
+            <div className="card-header" style={{ justifyContent: 'space-between' }}>
+              <h3>Credits History</h3>
+              <div style={{ background: '#f1f5f9', padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Wallet size={20} color="var(--primary-color)" />
+                <span style={{ fontWeight: 600 }}>Available Balance:</span>
+                <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary-color)' }}>₹{shop.credits || 0}</span>
+              </div>
+            </div>
+            <div className="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>DATE</th>
+                    <th>TYPE</th>
+                    <th>AMOUNT</th>
+                    <th>DESCRIPTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingCreditHistory ? (
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" /></td></tr>
+                  ) : creditHistory.length === 0 ? (
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px' }}>No credit history found.</td></tr>
+                  ) : (
+                    creditHistory.map(history => (
+                      <tr key={history.id}>
+                        <td>{new Date(history.createdAt).toLocaleString()}</td>
+                        <td>
+                          <span className={`status-badge ${history.type === 'used' ? 'status-danger' : 'status-success'}`}>
+                            {history.type.toUpperCase()}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 600, color: history.type === 'used' ? 'var(--danger)' : 'var(--success)' }}>
+                          {history.type === 'used' ? '-' : '+'}₹{history.amount}
+                        </td>
+                        <td>{history.description}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
@@ -557,6 +742,18 @@ const ShopDetails = () => {
         categories={categories}
         orderToEdit={editingOrder}
         isViewOnly={isViewOnly}
+      />
+
+      <PaymentModal 
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        shop={shop}
+      />
+
+      <ReturnModal
+        isOpen={isReturnModalOpen}
+        onClose={() => setIsReturnModalOpen(false)}
+        shop={shop}
       />
     </div>
   );
