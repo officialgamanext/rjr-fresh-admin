@@ -5,6 +5,19 @@ import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
+import CustomDropdown from '../components/CustomDropdown';
+
+const dateOptions = [
+  { value: 'Today', label: 'Today' },
+  { value: 'Yesterday', label: 'Yesterday' },
+  { value: 'This Week', label: 'This Week' },
+  { value: 'Last Week', label: 'Last Week' },
+  { value: 'This Month', label: 'This Month' },
+  { value: 'Last Month', label: 'Last Month' },
+  { value: 'This Year', label: 'This Year' },
+  { value: 'Last Year', label: 'Last Year' },
+  { value: 'Custom', label: 'Custom Date' }
+];
 
 const Payments = () => {
   const [dateFilter, setDateFilter] = useState('This Month');
@@ -139,22 +152,14 @@ const Payments = () => {
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <select 
-            className="form-control" 
-            value={dateFilter} 
-            onChange={(e) => setDateFilter(e.target.value)}
-            style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
-          >
-            <option value="Today">Today</option>
-            <option value="Yesterday">Yesterday</option>
-            <option value="This Week">This Week</option>
-            <option value="Last Week">Last Week</option>
-            <option value="This Month">This Month</option>
-            <option value="Last Month">Last Month</option>
-            <option value="This Year">This Year</option>
-            <option value="Last Year">Last Year</option>
-            <option value="Custom">Custom Date</option>
-          </select>
+          <div style={{ width: '180px' }}>
+            <CustomDropdown
+              options={dateOptions}
+              value={dateFilter}
+              onChange={(val) => setDateFilter(val)}
+              placeholder="Filter Date"
+            />
+          </div>
 
           {dateFilter === 'Custom' && (
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#fff', padding: '6px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>

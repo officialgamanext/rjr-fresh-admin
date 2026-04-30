@@ -25,6 +25,7 @@ import { db } from '../firebase';
 import { useLocation } from '../contexts/LocationContext';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import CustomDropdown from '../components/CustomDropdown';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
 import '../css/components/modal.css';
@@ -309,18 +310,12 @@ const Items = () => {
               <div className="modal-body">
                 <div className="form-group">
                   <label>Location</label>
-                  <select 
-                    name="locationId" 
-                    className="form-control premium-input" 
+                  <CustomDropdown
+                    options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
                     value={formData.locationId}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Location</option>
-                    {locations.map(loc => (
-                      <option key={loc.id} value={loc.id}>{loc.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => handleInputChange({ target: { name: 'locationId', value: val } })}
+                    placeholder="Select Location"
+                  />
                 </div>
                 <div className="form-group">
                   <label>Item Name</label>
@@ -346,37 +341,31 @@ const Items = () => {
                   ) : (
                     <div className="input-with-icon-premium">
                       <div className="icon-wrapper"><Layers size={18} /></div>
-                      <select 
-                        name="category" 
-                        className="form-control premium-input" 
+                      <CustomDropdown
+                        options={categories.map(cat => ({ value: cat.name, label: `${cat.name} (${cat.shortCode})` }))}
                         value={formData.category}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Select Category</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={cat.name}>{cat.name} ({cat.shortCode})</option>
-                        ))}
-                      </select>
+                        onChange={(val) => handleInputChange({ target: { name: 'category', value: val } })}
+                        placeholder="Select Category"
+                        searchable
+                      />
                     </div>
                   )}
                 </div>
                 <div className="form-row-grid">
                   <div className="form-group">
                     <label>Unit</label>
-                    <select 
-                      name="unit" 
-                      className="form-control premium-input" 
+                    <CustomDropdown
+                      options={[
+                        { value: 'kg', label: 'kg' },
+                        { value: 'gram', label: 'g' },
+                        { value: 'pcs', label: 'pcs' },
+                        { value: 'ltr', label: 'ltr' },
+                        { value: 'box', label: 'Box' },
+                        { value: 'pkt', label: 'Pkt' }
+                      ]}
                       value={formData.unit}
-                      onChange={handleInputChange}
-                    >
-                      <option value="kg">kg</option>
-                      <option value="gram">g</option>
-                      <option value="pcs">pcs</option>
-                      <option value="ltr">ltr</option>
-                      <option value="box">Box</option>
-                      <option value="pkt">Pkt</option>
-                    </select>
+                      onChange={(val) => handleInputChange({ target: { name: 'unit', value: val } })}
+                    />
                   </div>
                   <div className="form-group">
                     <label>HSN Code</label>

@@ -31,6 +31,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, secondaryAuth } from '../firebase';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import CustomDropdown from '../components/CustomDropdown';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
 import '../css/components/modal.css';
@@ -398,15 +399,19 @@ const Employees = () => {
                       <h4 className="sub-section-title"><Heart size={16} /> Emergency Contact</h4>
                       <div className="form-group">
                         <label>Relation</label>
-                        <select name="emergency.relation" className="form-control premium-input" value={formData.emergencyContact.relation} onChange={handleInputChange} required>
-                          <option value="">Select Relation</option>
-                          <option value="Father">Father</option>
-                          <option value="Mother">Mother</option>
-                          <option value="Spouse">Spouse</option>
-                          <option value="Sibling">Sibling</option>
-                          <option value="Friend">Friend</option>
-                          <option value="Other">Other</option>
-                        </select>
+                        <CustomDropdown
+                          options={[
+                            { value: 'Father', label: 'Father' },
+                            { value: 'Mother', label: 'Mother' },
+                            { value: 'Spouse', label: 'Spouse' },
+                            { value: 'Sibling', label: 'Sibling' },
+                            { value: 'Friend', label: 'Friend' },
+                            { value: 'Other', label: 'Other' }
+                          ]}
+                          value={formData.emergencyContact.relation}
+                          onChange={(val) => handleInputChange({ target: { name: 'emergency.relation', value: val } })}
+                          placeholder="Select Relation"
+                        />
                       </div>
                       <div className="form-row-grid">
                         <div className="form-group">

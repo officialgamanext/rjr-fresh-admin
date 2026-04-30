@@ -25,6 +25,7 @@ import { db } from '../firebase';
 import { useLocation } from '../contexts/LocationContext';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import CustomDropdown from '../components/CustomDropdown';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
 import '../css/components/modal.css';
@@ -281,31 +282,24 @@ const Shops = () => {
               <div className="modal-body">
                 <div className="form-group">
                   <label>Location</label>
-                  <select 
-                    name="locationId" 
-                    className="form-control" 
+                  <CustomDropdown
+                    options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
                     value={formData.locationId}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Location</option>
-                    {locations.map(loc => (
-                      <option key={loc.id} value={loc.id}>{loc.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => handleInputChange({ target: { name: 'locationId', value: val } })}
+                    placeholder="Select Location"
+                  />
                 </div>
                 <div className="form-group">
                   <label>Status</label>
-                  <select 
-                    name="status" 
-                    className="form-control" 
+                  <CustomDropdown
+                    options={[
+                      { value: 'Active', label: 'Active' },
+                      { value: 'Inactive', label: 'Inactive' }
+                    ]}
                     value={formData.status}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
+                    onChange={(val) => handleInputChange({ target: { name: 'status', value: val } })}
+                    placeholder="Select Status"
+                  />
                 </div>
                 <div className="form-group">
                   <label>Shop Name</label>

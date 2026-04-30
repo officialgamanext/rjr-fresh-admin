@@ -324,14 +324,16 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
             {loadingOrders ? (
               <div style={{ padding: '10px' }}><Loader2 className="spinner" size={16} /> Loading...</div>
             ) : (
-              <select className="form-control" onChange={handleOrderSelect} value={selectedOrder?.id || ''}>
-                <option value="">-- Select an Order --</option>
-                {orders.map(o => (
-                  <option key={o.id} value={o.id}>
-                    Order #{o.id.slice(-6).toUpperCase()} - {new Date(o.createdAt).toLocaleDateString()} (₹{o.grandTotal}) - {o.paymentStatus}
-                  </option>
-                ))}
-              </select>
+              <CustomDropdown
+                options={orders.map(o => ({
+                  value: o.id,
+                  label: `Order #${o.id.slice(-6).toUpperCase()} - ${new Date(o.createdAt).toLocaleDateString()} (₹${o.grandTotal}) - ${o.paymentStatus}`
+                }))}
+                value={selectedOrder?.id || ''}
+                onChange={(val) => handleOrderSelect({ target: { value: val } })}
+                placeholder="-- Select an Order --"
+                searchable
+              />
             )}
           </div>
 

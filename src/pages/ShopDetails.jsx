@@ -48,6 +48,7 @@ import '../css/pages/shop-details.css';
 import OrderModal from '../components/modals/OrderModal';
 import PaymentModal from '../components/modals/PaymentModal';
 import ReturnModal from '../components/modals/ReturnModal';
+import CustomDropdown from '../components/CustomDropdown';
 
 const ShopDetails = () => {
   const { id } = useParams();
@@ -740,10 +741,12 @@ const ShopDetails = () => {
                   </div>
                   <div className="form-group">
                     <label>Price List Assignment</label>
-                    <select name="priceListId" className="form-control" value={formData.priceListId} onChange={handleInputChange}>
-                      <option value="">Select a Price List</option>
-                      {allPriceLists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                    </select>
+                    <CustomDropdown
+                      options={allPriceLists.map(l => ({ value: l.id, label: l.name }))}
+                      value={formData.priceListId}
+                      onChange={(val) => handleInputChange({ target: { name: 'priceListId', value: val } })}
+                      placeholder="Select a Price List"
+                    />
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

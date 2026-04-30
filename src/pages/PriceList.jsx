@@ -25,6 +25,7 @@ import { db } from '../firebase';
 import { useLocation } from '../contexts/LocationContext';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import CustomDropdown from '../components/CustomDropdown';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
 import '../css/components/modal.css';
@@ -224,18 +225,12 @@ const PriceList = () => {
               <div className="modal-body">
                 <div className="form-group">
                   <label>Location</label>
-                  <select 
-                    name="locationId" 
-                    className="form-control premium-input" 
+                  <CustomDropdown
+                    options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
                     value={formData.locationId}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Location</option>
-                    {locations.map(loc => (
-                      <option key={loc.id} value={loc.id}>{loc.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => handleInputChange({ target: { name: 'locationId', value: val } })}
+                    placeholder="Select Location"
+                  />
                 </div>
                 <div className="form-group">
                   <label>Price List Name</label>
