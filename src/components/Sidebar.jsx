@@ -36,6 +36,7 @@ const Sidebar = () => {
     { title: 'Shops', icon: <Store />, path: '/shops' },
     { title: 'Shop Orders', icon: <Package />, path: '/shop-orders' },
     { title: 'Return Orders', icon: <RefreshCw />, path: '/return-orders' },
+    { title: 'Payments', icon: <CreditCard />, path: '/payments' },
     { title: 'Customers', icon: <Users />, path: '/customers' },
     { title: 'Customer Orders', icon: <Package />, path: '/customer-orders' },
     { title: 'Customer Prices', icon: <Tag />, path: '/customer-prices' },
@@ -43,8 +44,7 @@ const Sidebar = () => {
     { title: 'Items', icon: <Package />, path: '/items' },
     { title: 'Item Categories', icon: <Layers />, path: '/categories' },
     { title: 'Employees', icon: <Users />, path: '/employees' },
-    { title: 'Price List', icon: <ClipboardList />, path: '/pricelist' },
-    { title: 'Payments', icon: <CreditCard />, path: '/payments' },
+    { title: 'Price List', icon: <ClipboardList />, path: '/pricelist' }
   ];
 
   return (
@@ -74,7 +74,7 @@ const Sidebar = () => {
       </div>
 
       <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
-        <button 
+        <button
           onClick={handleLogout}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
@@ -84,12 +84,12 @@ const Sidebar = () => {
             fontWeight: 600, fontSize: '14px'
           }}
           onMouseOver={(e) => {
-             e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
-             e.currentTarget.style.color = '#fff';
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+            e.currentTarget.style.color = '#fff';
           }}
           onMouseOut={(e) => {
-             e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-             e.currentTarget.style.color = '#fca5a5';
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+            e.currentTarget.style.color = '#fca5a5';
           }}
         >
           <LogOut size={18} />
