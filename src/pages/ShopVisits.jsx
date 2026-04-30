@@ -56,14 +56,20 @@ const ShopVisits = () => {
   useEffect(() => {
     setLoading(true);
     let q;
-    if (selectedLocation === 'all') {
-      q = query(collection(db, 'checkins'), orderBy('timestamp', 'desc'));
-    } else {
-      q = query(collection(db, 'checkins'), where('locationId', '==', selectedLocation), orderBy('timestamp', 'desc'));
-    }
+    // Fetch all checkins and filter locally by location to be more robust
+    // especially for historical data that might be missing locationId
+    q = query(collection(db, 'checkins'));
 
     const unsubscribeVisits = onSnapshot(q, (snapshot) => {
       const visitData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Sort locally by timestamp desc to avoid needing a composite index
+      visitData.sort((a, b) => {
+        const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp || 0);
+        const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp || 0);
+        return dateB - dateA;
+      });
+
       setVisits(visitData);
       setLoading(false);
     }, (error) => {
@@ -76,35 +82,35 @@ const ShopVisits = () => {
       }
     });
 
-    const fetchExtraData = async () => {
-      try {
-        let shopQ, orderQ, empQ;
-        if (selectedLocation === 'all') {
-          shopQ = query(collection(db, 'shops'));
-          orderQ = query(collection(db, 'orders'));
-        } else {
-          shopQ = query(collection(db, 'shops'), where('locationId', '==', selectedLocation));
-          orderQ = query(collection(db, 'orders'), where('locationId', '==', selectedLocation));
-        }
-        empQ = query(collection(db, 'employees'));
+    // Listener for Shops
+    let shopQ;
+    if (selectedLocation === 'all') {
+      shopQ = query(collection(db, 'shops'));
+    } else {
+      shopQ = query(collection(db, 'shops'), where('locationId', '==', selectedLocation));
+    }
+    const unsubscribeShops = onSnapshot(shopQ, (snapshot) => {
+      setShops(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => console.error("Error fetching shops:", error));
 
-        const [shopSnap, orderSnap, empSnap] = await Promise.all([
-          getDocs(shopQ),
-          getDocs(orderQ),
-          getDocs(empQ)
-        ]);
+    // Fetch all orders and filter locally to be robust
+    const orderQ = query(collection(db, 'orders'));
+    const unsubscribeOrders = onSnapshot(orderQ, (snapshot) => {
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => console.error("Error fetching orders:", error));
 
-        setShops(shopSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        setOrders(orderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        setEmployees(empSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        console.error("Error fetching extra data:", error);
-      }
+    // Listener for Employees (All employees regardless of location usually)
+    const empQ = query(collection(db, 'employees'));
+    const unsubscribeEmployees = onSnapshot(empQ, (snapshot) => {
+      setEmployees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => console.error("Error fetching employees:", error));
+
+    return () => {
+      unsubscribeVisits();
+      unsubscribeShops();
+      unsubscribeOrders();
+      unsubscribeEmployees();
     };
-
-    fetchExtraData();
-
-    return () => unsubscribeVisits();
   }, [selectedLocation]);
 
   const getDateRange = (filter) => {
@@ -153,6 +159,13 @@ const ShopVisits = () => {
 
   const filteredVisits = useMemo(() => {
     let result = visits;
+
+    // Filter by location if not 'all'
+    if (selectedLocation !== 'all') {
+      const validShopIds = new Set(shops.map(s => s.id));
+      result = result.filter(v => validShopIds.has(v.shopId));
+    }
+
     const range = getDateRange(dateFilter);
     if (range) {
       result = result.filter(v => {
