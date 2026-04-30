@@ -26,6 +26,8 @@ import { Toaster } from 'react-hot-toast';
 import { LocationProvider } from './contexts/LocationContext';
 import './index.css';
 
+import PermissionGate from './components/PermissionGate';
+
 function App() {
   return (
     <>
@@ -36,24 +38,24 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route index element={<Dashboard />} />
-                <Route path="shops" element={<Shops />} />
-                <Route path="shop-visits" element={<ShopVisits />} />
-                <Route path="shop-orders" element={<ShopOrders />} />
-                <Route path="return-orders" element={<ReturnOrders />} />
-                <Route path="shops/:id" element={<ShopDetails />} />
-                <Route path="customers" element={<Customers />} />
-                <Route path="customer-orders" element={<CustomerOrders />} />
-                <Route path="customers/:id" element={<CustomerDetails />} />
-                <Route path="customer-prices" element={<CustomerPrices />} />
-                <Route path="items" element={<Items />} />
-                <Route path="batches" element={<Batches />} />
-                <Route path="categories" element={<Categories />} />
-                <Route path="pricelist" element={<PriceList />} />
-                 <Route path="pricelist/:id" element={<PriceListDetails />} />
-                <Route path="payments" element={<Payments />} />
-                <Route path="employees" element={<Employees />} />
-                <Route path="employees/:id" element={<EmployeeDetails />} />
+                <Route index element={<PermissionGate permission="dashboard"><Dashboard /></PermissionGate>} />
+                <Route path="shops" element={<PermissionGate permission="shops"><Shops /></PermissionGate>} />
+                <Route path="shop-visits" element={<PermissionGate permission="shopVisits"><ShopVisits /></PermissionGate>} />
+                <Route path="shop-orders" element={<PermissionGate permission="shopOrders"><ShopOrders /></PermissionGate>} />
+                <Route path="return-orders" element={<PermissionGate permission="returnOrders"><ReturnOrders /></PermissionGate>} />
+                <Route path="shops/:id" element={<PermissionGate permission="shops"><ShopDetails /></PermissionGate>} />
+                <Route path="customers" element={<PermissionGate permission="customers"><Customers /></PermissionGate>} />
+                <Route path="customer-orders" element={<PermissionGate permission="customerOrders"><CustomerOrders /></PermissionGate>} />
+                <Route path="customers/:id" element={<PermissionGate permission="customers"><CustomerDetails /></PermissionGate>} />
+                <Route path="customer-prices" element={<PermissionGate permission="customerPrices"><CustomerPrices /></PermissionGate>} />
+                <Route path="items" element={<PermissionGate permission="items"><Items /></PermissionGate>} />
+                <Route path="batches" element={<PermissionGate permission="batches"><Batches /></PermissionGate>} />
+                <Route path="categories" element={<PermissionGate permission="categories"><Categories /></PermissionGate>} />
+                <Route path="pricelist" element={<PermissionGate permission="priceList"><PriceList /></PermissionGate>} />
+                <Route path="pricelist/:id" element={<PermissionGate permission="priceList"><PriceListDetails /></PermissionGate>} />
+                <Route path="payments" element={<PermissionGate permission="payments"><Payments /></PermissionGate>} />
+                <Route path="employees" element={<PermissionGate permission="employees"><Employees /></PermissionGate>} />
+                <Route path="employees/:id" element={<PermissionGate permission="employees"><EmployeeDetails /></PermissionGate>} />
               </Route>
             </Routes>
           </BrowserRouter>

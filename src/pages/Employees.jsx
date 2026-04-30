@@ -63,16 +63,18 @@ const Employees = () => {
       admin: {
         dashboard: false,
         shops: false,
+        shopVisits: false,
         shopOrders: false,
+        returnOrders: false,
+        payments: false,
         customers: false,
         customerOrders: false,
         customerPrices: false,
         batches: false,
         items: false,
         categories: false,
-        employees: false,
         priceList: false,
-        payments: false
+        employees: false
       },
       app: {
         enabled: false,
@@ -137,7 +139,7 @@ const Employees = () => {
         password: '', // Don't show existing password for security
         emergencyContact: employee.emergencyContact || { relation: '', name: '', mobile: '' },
         access: employee.access || {
-          admin: { dashboard: false, shops: false, shopOrders: false, customers: false, customerOrders: false, customerPrices: false, batches: false, items: false, categories: false, employees: false, priceList: false, payments: false },
+          admin: { dashboard: false, shops: false, shopVisits: false, shopOrders: false, returnOrders: false, payments: false, customers: false, customerOrders: false, customerPrices: false, batches: false, items: false, categories: false, priceList: false, employees: false },
           app: { enabled: false, saleOrders: false, saleOrdersList: false, customerOrders: false, payments: false, returnOrders: false, shops: false }
         }
       });
@@ -153,7 +155,7 @@ const Employees = () => {
         password: '',
         emergencyContact: { relation: '', name: '', mobile: '' },
         access: {
-          admin: { dashboard: false, shops: false, shopOrders: false, customers: false, customerOrders: false, customerPrices: false, batches: false, items: false, categories: false, employees: false, priceList: false, payments: false },
+          admin: { dashboard: false, shops: false, shopVisits: false, shopOrders: false, returnOrders: false, payments: false, customers: false, customerOrders: false, customerPrices: false, batches: false, items: false, categories: false, priceList: false, employees: false },
           app: { enabled: false, saleOrders: false, saleOrdersList: false, customerOrders: false, payments: false, returnOrders: false, shops: false }
         }
       });
