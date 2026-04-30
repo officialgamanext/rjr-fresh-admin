@@ -279,13 +279,13 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '600px' }}>
+      <div className="modal-content" style={{ maxWidth: '700px', overflow: 'visible' }}>
         <div className="modal-header">
           <h2><RefreshCw size={20} style={{ marginRight: '8px' }} /> Add Return</h2>
           <button className="close-btn" onClick={onClose} disabled={saving}><X size={24} /></button>
         </div>
         
-        <div className="modal-body">
+        <div className="modal-body" style={{ minHeight: '400px' }}>
           {!shop && (
             <div className="selection-section" style={{ display: 'flex', gap: '16px', marginBottom: '16px', backgroundColor: '#fff', padding: '16px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ flex: 1 }}>
@@ -327,7 +327,7 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
               <CustomDropdown
                 options={orders.map(o => ({
                   value: o.id,
-                  label: `Order #${o.id.slice(-6).toUpperCase()} - ${new Date(o.createdAt).toLocaleDateString()} (₹${o.grandTotal}) - ${o.paymentStatus}`
+                  label: `Order #${o.id.slice(-6).toUpperCase()} - ${new Date(o.createdAt).toLocaleDateString()} (₹${o.grandTotal}) - ${o.paymentStatus || 'Pending'}`
                 }))}
                 value={selectedOrder?.id || ''}
                 onChange={(val) => handleOrderSelect({ target: { value: val } })}
@@ -340,7 +340,7 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
           {selectedOrder && (
             <div className="return-items-section" style={{ marginTop: '20px' }}>
               <h4>Order Items</h4>
-              <div className="table-responsive" style={{ marginTop: '10px' }}>
+              <div className="table-responsive" style={{ marginTop: '10px', maxHeight: '40vh', overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
