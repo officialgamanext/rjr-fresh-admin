@@ -11,19 +11,34 @@ import {
   ChevronDown,
   PlusCircle,
   X,
-  Check
+  Check,
+  LogOut
 } from 'lucide-react';
 import { useLocation } from '../contexts/LocationContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import '../css/components/topbar.css';
 
 const Topbar = () => {
   const { selectedLocation, locations, changeLocation, addLocation } = useLocation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newLocationName, setNewLocationName] = useState('');
   const dropdownRef = useRef(null);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout failed", error);
+      toast.error("Logout failed");
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -152,29 +167,16 @@ const Topbar = () => {
         </div>
       </div>
 
-      {/* <div className="topbar-right">
-        <div className="topbar-actions">
-          <button className="action-btn"><Search size={20} /></button>
-          <button className="action-btn"><Maximize size={20} /></button>
-          <button className="action-btn"><Moon size={20} /></button>
-          <button className="action-btn">
-            <Clock size={20} />
-            <span className="badge badge-success">2</span>
-          </button>
-          <button className="action-btn">
-            <Bell size={20} />
-            <span className="badge badge-danger">3</span>
-          </button>
-        </div>
-        
-        <div className="user-profile">
-          <img 
-            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" 
-            alt="User" 
-            className="user-avatar" 
-          />
-        </div>
-      </div> */}
+      <div className="topbar-right">
+        <button 
+          className="action-btn" 
+          onClick={handleLogout}
+          title="Sign Out"
+          style={{ color: '#ef4444' }}
+        >
+          <LogOut size={20} />
+        </button>
+      </div>
     </header>
   );
 };
