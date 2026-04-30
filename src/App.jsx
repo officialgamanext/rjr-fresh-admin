@@ -18,6 +18,7 @@ import CustomerOrders from './pages/CustomerOrders';
 import Employees from './pages/Employees';
 import EmployeeDetails from './pages/EmployeeDetails';
 import CustomerPrices from './pages/CustomerPrices';
+import ShopVisits from './pages/ShopVisits';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
@@ -37,6 +38,7 @@ function App() {
               <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="shops" element={<Shops />} />
+                <Route path="shop-visits" element={<ShopVisits />} />
                 <Route path="shop-orders" element={<ShopOrders />} />
                 <Route path="return-orders" element={<ReturnOrders />} />
                 <Route path="shops/:id" element={<ShopDetails />} />

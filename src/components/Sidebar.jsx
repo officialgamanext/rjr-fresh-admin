@@ -11,7 +11,8 @@ import {
   Layers,
   Tag,
   Box,
-  RefreshCw
+  RefreshCw,
+  MapPin
 } from 'lucide-react';
 import '../css/components/sidebar.css';
 
@@ -19,6 +20,7 @@ const Sidebar = () => {
   const navItems = [
     { title: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
     { title: 'Shops', icon: <Store />, path: '/shops' },
+    { title: 'Shop Visits', icon: <MapPin />, path: '/shop-visits' },
     { title: 'Shop Orders', icon: <Package />, path: '/shop-orders' },
     { title: 'Return Orders', icon: <RefreshCw />, path: '/return-orders' },
     { title: 'Payments', icon: <CreditCard />, path: '/payments' },

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import '../css/components/custom-dropdown.css';
 
-const CustomDropdown = ({ options, value, onChange, placeholder = "Select...", disabled = false, searchable = false }) => {
+const CustomDropdown = ({ options, value, onChange, placeholder = "Select...", disabled = false, searchable = false, icon }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
@@ -29,9 +29,12 @@ const CustomDropdown = ({ options, value, onChange, placeholder = "Select...", d
         className={`dropdown-header ${isOpen ? 'open' : ''}`} 
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
-        <span className={selectedOption ? 'selected-text' : 'placeholder-text'}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {icon && <span className="dropdown-icon">{icon}</span>}
+          <span className={selectedOption ? 'selected-text' : 'placeholder-text'}>
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+        </div>
         <ChevronDown size={16} className={`chevron-icon ${isOpen ? 'open' : ''}`} />
       </div>
       
