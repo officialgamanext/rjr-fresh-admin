@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Store, Edit2 } from 'lucide-react';
+import { Search, Loader2, Store, Edit2, Plus } from 'lucide-react';
 import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
+import OrderModal from '../components/modals/OrderModal';
 
 const ShopOrders = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   const [dateFilter, setDateFilter] = useState('This Month');
   const [customStart, setCustomStart] = useState('');
@@ -22,7 +25,7 @@ const ShopOrders = () => {
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
 
-    switch(filter) {
+    switch (filter) {
       case 'Today': return { start: today, end: endOfToday };
       case 'Yesterday': {
         const start = new Date(today); start.setDate(today.getDate() - 1);
@@ -30,7 +33,7 @@ const ShopOrders = () => {
         return { start, end };
       }
       case 'This Week': {
-        const start = new Date(today); start.setDate(today.getDate() - today.getDay()); 
+        const start = new Date(today); start.setDate(today.getDate() - today.getDay());
         return { start, end: endOfToday };
       }
       case 'Last Week': {
@@ -63,28 +66,28 @@ const ShopOrders = () => {
   useEffect(() => {
     let startIso, endIso;
     if (dateFilter === 'Custom') {
-       if (customStart && customEnd) {
-         startIso = new Date(customStart).toISOString();
-         const endD = new Date(customEnd); endD.setHours(23, 59, 59, 999);
-         endIso = endD.toISOString();
-       }
+      if (customStart && customEnd) {
+        startIso = new Date(customStart).toISOString();
+        const endD = new Date(customEnd); endD.setHours(23, 59, 59, 999);
+        endIso = endD.toISOString();
+      }
     } else {
-       const { start, end } = getDateRange(dateFilter);
-       if (start && end) {
-         startIso = start.toISOString();
-         endIso = end.toISOString();
-       }
+      const { start, end } = getDateRange(dateFilter);
+      if (start && end) {
+        startIso = start.toISOString();
+        endIso = end.toISOString();
+      }
     }
 
     let q = query(collection(db, 'orders'));
     if (startIso && endIso) {
-       q = query(collection(db, 'orders'), where('createdAt', '>=', startIso), where('createdAt', '<=', endIso));
+      q = query(collection(db, 'orders'), where('createdAt', '>=', startIso), where('createdAt', '<=', endIso));
     }
 
     setLoading(true);
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      data.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(data);
       setLoading(false);
     }, (error) => {
@@ -94,7 +97,16 @@ const ShopOrders = () => {
     return () => unsubscribe();
   }, [dateFilter, customStart, customEnd]);
 
-  const filteredOrders = orders.filter(order => 
+  useEffect(() => {
+    // Fetch categories for the order modal
+    const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const filteredOrders = orders.filter(order =>
     order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (order.shopName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (order.status || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -116,9 +128,17 @@ const ShopOrders = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <select 
-            className="form-control" 
-            value={dateFilter} 
+          <button
+            className="btn-primary"
+            onClick={() => setIsOrderModalOpen(true)}
+            style={{ display: 'flex', minWidth: 'fit-content', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600 }}
+          >
+            <Plus size={18} /> Add Order
+          </button>
+
+          <select
+            className="form-control"
+            value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
             style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
           >
@@ -164,9 +184,9 @@ const ShopOrders = () => {
 
       <div className="card" style={{ padding: '20px' }}>
         <div style={{ marginBottom: '20px', position: 'relative', width: '300px' }}>
-          <input 
-            type="text" 
-            placeholder="Search orders by ID, Shop or Status..." 
+          <input
+            type="text"
+            placeholder="Search orders by ID, Shop or Status..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="form-control"
@@ -189,13 +209,25 @@ const ShopOrders = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="var(--primary-color)" /></td></tr>
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinner" size={24} color="var(--primary-color)" /></td></tr>
               ) : filteredOrders.length === 0 ? (
-                <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#94a3b8'}}>No orders found.</td></tr>
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No orders found.</td></tr>
               ) : filteredOrders.map(order => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '12px', fontWeight: 600 }}>#{order.id.slice(-6).toUpperCase()}</td>
-                  <td style={{ padding: '12px', fontWeight: 600 }}>{order.shopName}</td>
+                  <td
+                    style={{ padding: '12px', fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => navigate(`/shops/${order.shopId}`)}
+                    title="View Shop Details"
+                  >
+                    #{order.id.slice(-6).toUpperCase()}
+                  </td>
+                  <td
+                    style={{ padding: '12px', fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => navigate(`/shops/${order.shopId}`)}
+                    title="View Shop Details"
+                  >
+                    {order.shopName}
+                  </td>
                   <td style={{ padding: '12px', color: '#64748b' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
                   <td style={{ padding: '12px' }}>
@@ -204,8 +236,8 @@ const ShopOrders = () => {
                     </span>
                   </td>
                   <td style={{ padding: '12px', textAlign: 'right' }}>
-                    <button 
-                      className="btn-secondary" 
+                    <button
+                      className="btn-secondary"
                       onClick={() => navigate(`/shops/${order.shopId}`)}
                       style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     >
@@ -218,6 +250,12 @@ const ShopOrders = () => {
           </table>
         </div>
       </div>
+
+      <OrderModal
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        categories={categories}
+      />
     </div>
   );
 };

@@ -21,11 +21,13 @@ import {
   doc,
   query,
   where,
-  orderBy
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 import '../../css/components/order-modal.css';
+import CustomDropdown from '../CustomDropdown';
 
 const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, isViewOnly }) => {
   const [items, setItems] = useState([{
@@ -41,7 +43,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
   const [priceMap, setPriceMap] = useState({}); // { itemId: price }
   const [discount, setDiscount] = useState(0);
   const [paymentReceived, setPaymentReceived] = useState(0);
-  const [creditsToUse, setCreditsToUse] = useState(0);
+  const [useCredits, setUseCredits] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [employees, setEmployees] = useState([]);
@@ -51,7 +53,72 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [assignedTo, setAssignedTo] = useState('');
 
-  const entity = shop || customer;
+  const [locations, setLocations] = useState([]);
+  const [shops, setShops] = useState([]);
+  const [selectedLocationId, setSelectedLocationId] = useState('');
+  const [selectedShopId, setSelectedShopId] = useState('');
+  const [globalShop, setGlobalShop] = useState(null);
+  
+  const [batches, setBatches] = useState([]);
+
+  const entity = shop || customer || globalShop;
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchBatches = async () => {
+        try {
+          const q = query(collection(db, 'batches'), orderBy('createdAt', 'desc'), limit(10));
+          const snap = await getDocs(q);
+          setBatches(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        } catch (error) {
+          console.error("Error fetching batches:", error);
+        }
+      };
+      fetchBatches();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && !shop && !customer && !orderToEdit) {
+      const fetchLocations = async () => {
+         try {
+           const locSnap = await getDocs(collection(db, 'locations'));
+           setLocations(locSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+         } catch (error) {
+           console.error("Error fetching locations:", error);
+         }
+      };
+      fetchLocations();
+    }
+  }, [isOpen, shop, customer, orderToEdit]);
+
+  useEffect(() => {
+    if (selectedLocationId) {
+      const fetchShops = async () => {
+         try {
+           const q = query(collection(db, 'shops'), where('locationId', '==', selectedLocationId));
+           const shopSnap = await getDocs(q);
+           setShops(shopSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+         } catch (error) {
+           console.error("Error fetching shops:", error);
+         }
+      };
+      fetchShops();
+    } else {
+      setShops([]);
+      setSelectedShopId('');
+      setGlobalShop(null);
+    }
+  }, [selectedLocationId]);
+
+  useEffect(() => {
+    if (selectedShopId) {
+       const s = shops.find(s => s.id === selectedShopId);
+       setGlobalShop(s || null);
+    } else {
+       setGlobalShop(null);
+    }
+  }, [selectedShopId, shops]);
 
   useEffect(() => {
     if (isOpen && entity) {
@@ -69,7 +136,8 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
 
           // 2. Fetch prices from the entity's price list (if available)
           const pMap = {};
-          const priceListId = shop?.priceListId || customer?.priceListId;
+          const activeShop = shop || globalShop;
+          const priceListId = activeShop?.priceListId || customer?.priceListId;
           if (priceListId) {
             const pricesSnap = await getDocs(collection(db, `priceLists/${priceListId}/items`));
             pricesSnap.forEach(doc => {
@@ -108,7 +176,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
             }));
             setDiscount(orderToEdit.discount || 0);
             setPaymentReceived(orderToEdit.paymentReceived || 0);
-            setCreditsToUse(orderToEdit.creditsUsed || 0);
+            setUseCredits((orderToEdit.creditsUsed || 0) > 0);
             setOrderStatus(orderToEdit.status || 'Ordered');
             setPaymentStatus(orderToEdit.paymentStatus || 'Unpaid');
             setPaymentMethod(orderToEdit.paymentMethod || 'Cash');
@@ -125,7 +193,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
             }]);
             setDiscount(0);
             setPaymentReceived(0);
-            setCreditsToUse(0);
+            setUseCredits(false);
             setOrderStatus('Ordered');
             setPaymentStatus('Unpaid');
             setPaymentMethod('Cash');
@@ -140,7 +208,16 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
       };
       fetchData();
     }
-  }, [isOpen, shop, customer, orderToEdit, categories]);
+  }, [isOpen, entity, orderToEdit, categories, shop, customer]);
+
+  // Reset local state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedLocationId('');
+      setSelectedShopId('');
+      setGlobalShop(null);
+    }
+  }, [isOpen]);
 
   const addRow = () => {
     setItems([...items, {
@@ -185,7 +262,12 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
 
   const totalSubtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
   const subtotalAfterDiscount = Math.max(0, totalSubtotal - (parseFloat(discount) || 0));
-  const validCreditsUsed = Math.min(parseFloat(creditsToUse) || 0, entity?.credits || 0, subtotalAfterDiscount);
+  
+  const calculatedCreditsToUse = orderToEdit 
+    ? (orderToEdit.creditsUsed || 0) 
+    : Math.min(entity?.credits || 0, subtotalAfterDiscount);
+  
+  const validCreditsUsed = useCredits ? calculatedCreditsToUse : 0;
   const grandTotal = Math.max(0, subtotalAfterDiscount - validCreditsUsed);
 
   const sendPushNotification = async (employeeId, orderId, customerName) => {
@@ -263,11 +345,12 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         status: orderStatus
       };
 
-      const customerName = shop ? shop.name : customer?.name;
+      const activeShop = shop || globalShop;
+      const customerName = activeShop ? activeShop.name : customer?.name;
 
-      if (shop) {
-        orderData.shopId = shop.id;
-        orderData.shopName = shop.name;
+      if (activeShop) {
+        orderData.shopId = activeShop.id;
+        orderData.shopName = activeShop.name;
         orderData.type = 'B2B';
       } else if (customer) {
         orderData.customerId = customer.id;
@@ -292,11 +375,11 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         const docRef = await addDoc(collection(db, collectionName), orderData);
         finalOrderId = docRef.id;
         
-        if (validCreditsUsed > 0 && shop) {
-           const newCredits = (shop.credits || 0) - validCreditsUsed;
-           await updateDoc(doc(db, 'shops', shop.id), { credits: newCredits });
+        if (validCreditsUsed > 0 && activeShop) {
+           const newCredits = (activeShop.credits || 0) - validCreditsUsed;
+           await updateDoc(doc(db, 'shops', activeShop.id), { credits: newCredits });
            await addDoc(collection(db, 'creditHistory'), {
-             shopId: shop.id,
+             shopId: activeShop.id,
              amount: validCreditsUsed,
              type: 'used',
              description: `Used for Order #${finalOrderId.slice(-6).toUpperCase()}`,
@@ -330,17 +413,52 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
             <ShoppingCart size={24} className="header-icon" />
             <div>
               <h2>{isViewOnly ? 'Order Details' : (orderToEdit ? 'Edit Order' : 'Create New Order')}</h2>
-              <p>{shop ? 'Shop' : 'Customer'}: <strong>{entity.name}</strong> • Order ID: <strong>{orderToEdit ? `#${orderToEdit.id.slice(-6).toUpperCase()}` : 'NEW'}</strong></p>
+              {entity ? (
+                <p>{shop || globalShop ? 'Shop' : 'Customer'}: <strong>{entity.name}</strong> • Order ID: <strong>{orderToEdit ? `#${orderToEdit.id.slice(-6).toUpperCase()}` : 'NEW'}</strong></p>
+              ) : (
+                <p>Order ID: <strong>NEW</strong></p>
+              )}
             </div>
           </div>
           <button className="close-btn" onClick={onClose}><X size={24} /></button>
         </div>
 
         <div className="order-modal-body">
-          {loading ? (
+          {!shop && !customer && !orderToEdit && (
+            <div className="selection-section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Select Location</label>
+                <CustomDropdown
+                  options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
+                  value={selectedLocationId}
+                  onChange={val => setSelectedLocationId(val)}
+                  placeholder="-- Choose Location --"
+                  searchable
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Select Shop</label>
+                <CustomDropdown
+                  options={shops.map(s => ({ value: s.id, label: s.name }))}
+                  value={selectedShopId}
+                  onChange={val => setSelectedShopId(val)}
+                  placeholder="-- Choose Shop --"
+                  disabled={!selectedLocationId}
+                  searchable
+                />
+              </div>
+            </div>
+          )}
+
+          {!entity ? (
+            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
+              <ShoppingCart size={48} style={{ opacity: 0.2, margin: '0 auto 16px' }} />
+              <p>Please select a location and shop to start adding items.</p>
+            </div>
+          ) : loading ? (
             <div className="modal-loader"><Loader2 size={32} className="spinner" /> Loading Data...</div>
           ) : (
-            <>
+            <div className="order-content-wrapper" style={{ display: 'flex', gap: '24px', flex: 1, alignItems: 'flex-start', width: '100%' }}>
               <div className="items-section">
                 <div className="section-header">
                   <h3>Order Items</h3>
@@ -365,7 +483,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                   {items.map((row) => {
                     const filteredInventory = allInventoryItems.filter(i => {
                       const matchesCategory = !row.categoryId || i.category === categories.find(c => c.id === row.categoryId)?.name;
-                      if (shop) {
+                      if (shop || globalShop) {
                         // For Shops (B2B), hide Customer Only (B2C) items
                         return matchesCategory && !i.forCustomerOnly;
                       }
@@ -379,28 +497,23 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                     return (
                       <div key={row.id} className="item-row">
                         <div>
-                          <select
-                            className="form-control"
+                          <CustomDropdown
+                            options={categories.map(c => ({ value: c.id, label: c.name }))}
                             value={row.categoryId}
-                            onChange={(e) => handleItemChange(row.id, 'categoryId', e.target.value)}
+                            onChange={(val) => handleItemChange(row.id, 'categoryId', val)}
+                            placeholder="Category"
                             disabled={isViewOnly}
-                          >
-                            <option value="">Select</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                          </select>
+                          />
                         </div>
                         <div>
-                          <select
-                            className="form-control"
+                          <CustomDropdown
+                            options={filteredInventory.map(i => ({ value: i.id, label: `${i.name} (${i.unit})` }))}
                             value={row.itemId}
-                            onChange={(e) => handleItemChange(row.id, 'itemId', e.target.value)}
+                            onChange={(val) => handleItemChange(row.id, 'itemId', val)}
+                            placeholder="Select Item"
                             disabled={isViewOnly}
-                          >
-                            <option value="">Select Item</option>
-                            {filteredInventory.map(i => (
-                              <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
-                            ))}
-                          </select>
+                            searchable
+                          />
                         </div>
                         <div>
                           <input
@@ -413,12 +526,11 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                           />
                         </div>
                         <div>
-                          <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Batch"
+                          <CustomDropdown
+                            options={batches.map(b => ({ value: b.batchNumber, label: b.batchNumber }))}
                             value={row.batchNumber}
-                            onChange={(e) => handleItemChange(row.id, 'batchNumber', e.target.value)}
+                            onChange={(val) => handleItemChange(row.id, 'batchNumber', val)}
+                            placeholder="Select Batch"
                             disabled={isViewOnly}
                           />
                         </div>
@@ -461,18 +573,22 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                     </div>
                   </div>
                   {(entity?.credits > 0 || orderToEdit?.creditsUsed > 0) && (
-                    <div className="summary-row" style={{ color: 'var(--primary-color)' }}>
-                      <span>Use Credits (Available: ₹{entity?.credits || 0})</span>
-                      <div className="input-with-icon">
-                        <IndianRupee size={14} />
-                        <input
-                          type="number"
-                          value={creditsToUse}
-                          onChange={(e) => setCreditsToUse(e.target.value)}
-                          placeholder="0.00"
-                          disabled={isViewOnly || !!orderToEdit}
-                          max={Math.min(entity?.credits || 0, subtotalAfterDiscount)}
-                        />
+                    <div className="summary-row" style={{ color: 'var(--primary-color)', alignItems: 'center' }}>
+                      <div style={{ paddingRight: '8px', lineHeight: '1.3' }}>
+                        <span style={{ display: 'block', fontWeight: 600 }}>Use Credits</span>
+                        <span style={{ fontSize: '11px', opacity: 0.8 }}>(₹{entity?.credits || 0} available)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                        {useCredits && <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>-₹{validCreditsUsed.toFixed(2)}</span>}
+                        <label className="toggle-switch" style={{ margin: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={useCredits}
+                            onChange={(e) => setUseCredits(e.target.checked)}
+                            disabled={isViewOnly || !!orderToEdit}
+                          />
+                          <span className="slider round"></span>
+                        </label>
                       </div>
                     </div>
                   )}
@@ -497,67 +613,57 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                 </div>
 
                 <div className="summary-card status-controls" style={{ marginTop: '16px' }}>
-                  <div className="summary-row">
+                  <div className="summary-row" style={{ alignItems: 'center' }}>
                     <span>Order Status</span>
-                    <select 
-                      className="form-control" 
-                      value={orderStatus} 
-                      onChange={(e) => setOrderStatus(e.target.value)}
-                      disabled={isViewOnly}
-                    >
-                      <option value="Ordered">Ordered</option>
-                      <option value="Shipped">Shipped</option>
-                      <option value="Delivered">Delivered</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
+                    <div style={{ width: '150px' }}>
+                      <CustomDropdown
+                        options={['Ordered', 'Shipped', 'Delivered', 'Completed', 'Cancelled'].map(s => ({ value: s, label: s }))}
+                        value={orderStatus}
+                        onChange={(val) => setOrderStatus(val)}
+                        disabled={isViewOnly}
+                      />
+                    </div>
                   </div>
-                  <div className="summary-row">
+                  <div className="summary-row" style={{ alignItems: 'center' }}>
                     <span>Payment Status</span>
-                    <select 
-                      className="form-control" 
-                      value={paymentStatus} 
-                      onChange={(e) => setPaymentStatus(e.target.value)}
-                      disabled={isViewOnly}
-                    >
-                      <option value="Unpaid">Unpaid</option>
-                      <option value="Paid">Paid</option>
-                      <option value="Partial">Partial</option>
-                    </select>
+                    <div style={{ width: '150px' }}>
+                      <CustomDropdown
+                        options={['Unpaid', 'Paid', 'Partial'].map(s => ({ value: s, label: s }))}
+                        value={paymentStatus}
+                        onChange={(val) => setPaymentStatus(val)}
+                        disabled={isViewOnly}
+                      />
+                    </div>
                   </div>
-                  <div className="summary-row">
+                  <div className="summary-row" style={{ alignItems: 'center' }}>
                     <span>Payment Method</span>
-                    <select 
-                      className="form-control" 
-                      value={paymentMethod} 
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      disabled={isViewOnly}
-                    >
-                      <option value="Cash">Cash</option>
-                      <option value="UPI">UPI</option>
-                      <option value="Card">Card</option>
-                    </select>
+                    <div style={{ width: '150px' }}>
+                      <CustomDropdown
+                        options={['Cash', 'UPI', 'Card'].map(s => ({ value: s, label: s }))}
+                        value={paymentMethod}
+                        onChange={(val) => setPaymentMethod(val)}
+                        disabled={isViewOnly}
+                      />
+                    </div>
                   </div>
-                  <div className="summary-row">
+                  <div className="summary-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
                     <span>Assign To Employee</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-                      <UserCheck size={18} color="var(--primary-color)" />
-                      <select 
-                        className="form-control" 
-                        value={assignedTo} 
-                        onChange={(e) => setAssignedTo(e.target.value)}
-                        disabled={isViewOnly}
-                      >
-                        <option value="">Select Employee</option>
-                        {employees.map(e => (
-                          <option key={e.id} value={e.id}>{e.name} ({e.role || 'Agent'})</option>
-                        ))}
-                      </select>
+                      <UserCheck size={18} color="var(--primary-color)" style={{ flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <CustomDropdown
+                          options={employees.map(e => ({ value: e.id, label: `${e.name} (${e.role || 'Agent'})` }))}
+                          value={assignedTo}
+                          onChange={(val) => setAssignedTo(val)}
+                          placeholder="Select Employee"
+                          disabled={isViewOnly}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
 
@@ -591,6 +697,49 @@ const styles = `
     border: 1px solid #cbd5e1;
     font-size: 13px;
     font-weight: 600;
+  }
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+  }
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .toggle-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .4s;
+  }
+  .toggle-switch .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+  }
+  .toggle-switch input:checked + .slider {
+    background-color: var(--primary-color, #3b82f6);
+  }
+  .toggle-switch input:checked + .slider:before {
+    transform: translateX(20px);
+  }
+  .toggle-switch .slider.round {
+    border-radius: 24px;
+  }
+  .toggle-switch .slider.round:before {
+    border-radius: 50%;
   }
 `;
 
