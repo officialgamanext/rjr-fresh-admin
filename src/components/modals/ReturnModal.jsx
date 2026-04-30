@@ -3,6 +3,7 @@ import { X, Loader2, Search, RefreshCw } from 'lucide-react';
 import { collection, query, where, orderBy, limit, getDocs, doc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
+import CustomDropdown from '../CustomDropdown';
 
 const ReturnModal = ({ isOpen, onClose, shop }) => {
   const [orders, setOrders] = useState([]);
@@ -13,14 +14,75 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
   const [returnItems, setReturnItems] = useState({});
   const [saving, setSaving] = useState(false);
 
+  const [locations, setLocations] = useState([]);
+  const [shops, setShops] = useState([]);
+  const [selectedLocationId, setSelectedLocationId] = useState('');
+  const [selectedShopId, setSelectedShopId] = useState('');
+  const [globalShop, setGlobalShop] = useState(null);
+
+  const activeShop = shop || globalShop;
+
   useEffect(() => {
-    if (isOpen && shop) {
+    if (isOpen && !shop) {
+      const fetchLocations = async () => {
+         try {
+           const locSnap = await getDocs(collection(db, 'locations'));
+           setLocations(locSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+         } catch (error) {
+           console.error("Error fetching locations:", error);
+         }
+      };
+      fetchLocations();
+    }
+  }, [isOpen, shop]);
+
+  useEffect(() => {
+    if (selectedLocationId) {
+      const fetchShops = async () => {
+         try {
+           const q = query(collection(db, 'shops'), where('locationId', '==', selectedLocationId));
+           const shopSnap = await getDocs(q);
+           setShops(shopSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+         } catch (error) {
+           console.error("Error fetching shops:", error);
+         }
+      };
+      fetchShops();
+    } else {
+      setShops([]);
+      setSelectedShopId('');
+      setGlobalShop(null);
+    }
+  }, [selectedLocationId]);
+
+  useEffect(() => {
+    if (selectedShopId) {
+       const s = shops.find(s => s.id === selectedShopId);
+       setGlobalShop(s || null);
+    } else {
+       setGlobalShop(null);
+    }
+  }, [selectedShopId, shops]);
+
+  // Reset local state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedLocationId('');
+      setSelectedShopId('');
+      setGlobalShop(null);
+      setSelectedOrder(null);
+      setReturnItems({});
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && activeShop) {
       const fetchOrders = async () => {
         setLoadingOrders(true);
         try {
           const q = query(
             collection(db, 'orders'),
-            where('shopId', '==', shop.id)
+            where('shopId', '==', activeShop.id)
           );
           const snap = await getDocs(q);
           const allOrders = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -39,7 +101,7 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
       };
       fetchOrders();
     }
-  }, [isOpen, shop]);
+  }, [isOpen, activeShop]);
 
   const handleOrderSelect = (e) => {
     const orderId = e.target.value;
@@ -165,8 +227,7 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
 
       // 3. Add to Shop Credits if applicable
       if (creditToAdd > 0) {
-        // fetch fresh shop data just to be safe, though we can use a transaction, batch is fine if traffic is low.
-        const shopRef = doc(db, 'shops', shop.id);
+        const shopRef = doc(db, 'shops', activeShop.id);
         const shopSnap = await getDoc(shopRef);
         const currentCredits = shopSnap.exists() ? (shopSnap.data().credits || 0) : 0;
         
@@ -177,7 +238,7 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
         // Add credit history
         const creditRef = doc(collection(db, 'creditHistory'));
         batch.set(creditRef, {
-          shopId: shop.id,
+          shopId: activeShop.id,
           amount: creditToAdd,
           type: 'return',
           description: `Return for order #${selectedOrder.id.slice(-6).toUpperCase()}`,
@@ -188,8 +249,9 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
       // 4. Save Return Record
       const returnRef = doc(collection(db, 'returns'));
       batch.set(returnRef, {
-        shopId: shop.id,
-        shopName: shop.name,
+        shopId: activeShop.id,
+        shopName: activeShop.name,
+        locationId: activeShop.locationId,
         orderId: selectedOrder.id,
         items: returnedItemsList,
         totalRefund: refundAmount,
@@ -213,7 +275,7 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
     }
   };
 
-  if (!isOpen || !shop) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">
@@ -224,8 +286,41 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
         </div>
         
         <div className="modal-body">
-          <div className="form-group">
-            <label>Select Order (Recent 15)</label>
+          {!shop && (
+            <div className="selection-section" style={{ display: 'flex', gap: '16px', marginBottom: '16px', backgroundColor: '#fff', padding: '16px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Select Location</label>
+                <CustomDropdown
+                  options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
+                  value={selectedLocationId}
+                  onChange={val => setSelectedLocationId(val)}
+                  placeholder="-- Choose Location --"
+                  searchable
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>Select Shop</label>
+                <CustomDropdown
+                  options={shops.map(s => ({ value: s.id, label: s.name }))}
+                  value={selectedShopId}
+                  onChange={val => setSelectedShopId(val)}
+                  placeholder="-- Choose Shop --"
+                  disabled={!selectedLocationId}
+                  searchable
+                />
+              </div>
+            </div>
+          )}
+
+          {!activeShop ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b' }}>
+              <RefreshCw size={48} style={{ opacity: 0.2, margin: '0 auto 16px' }} />
+              <p>Please select a location and shop to process returns.</p>
+            </div>
+          ) : (
+            <>
+              <div className="form-group">
+                <label>Select Order (Recent 15)</label>
             {loadingOrders ? (
               <div style={{ padding: '10px' }}><Loader2 className="spinner" size={16} /> Loading...</div>
             ) : (
@@ -295,6 +390,8 @@ const ReturnModal = ({ isOpen, onClose, shop }) => {
                 If the order was fully paid, this amount will be added to the shop's available credits. Otherwise, it will reduce the pending balance.
               </p>
             </div>
+          )}
+            </>
           )}
         </div>
 

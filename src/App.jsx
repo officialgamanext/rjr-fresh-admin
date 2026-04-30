@@ -11,6 +11,7 @@ import Categories from './pages/Categories';
 import Payments from './pages/Payments';
 import ShopDetails from './pages/ShopDetails';
 import ShopOrders from './pages/ShopOrders';
+import ReturnOrders from './pages/ReturnOrders';
 import Batches from './pages/Batches';
 import CustomerDetails from './pages/CustomerDetails';
 import CustomerOrders from './pages/CustomerOrders';
@@ -37,6 +38,7 @@ function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="shops" element={<Shops />} />
                 <Route path="shop-orders" element={<ShopOrders />} />
+                <Route path="return-orders" element={<ReturnOrders />} />
                 <Route path="shops/:id" element={<ShopDetails />} />
                 <Route path="customers" element={<Customers />} />
                 <Route path="customer-orders" element={<CustomerOrders />} />

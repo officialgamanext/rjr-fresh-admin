@@ -11,7 +11,8 @@ import {
   Layers,
   Tag,
   LogOut,
-  Box
+  Box,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ const Sidebar = () => {
     { title: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
     { title: 'Shops', icon: <Store />, path: '/shops' },
     { title: 'Shop Orders', icon: <Package />, path: '/shop-orders' },
+    { title: 'Return Orders', icon: <RefreshCw />, path: '/return-orders' },
     { title: 'Customers', icon: <Users />, path: '/customers' },
     { title: 'Customer Orders', icon: <Package />, path: '/customer-orders' },
     { title: 'Customer Prices', icon: <Tag />, path: '/customer-prices' },
