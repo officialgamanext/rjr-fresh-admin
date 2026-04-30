@@ -14,6 +14,7 @@ const Payments = () => {
   const [shopOrders, setShopOrders] = useState([]);
   const [customerOrders, setCustomerOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('shopOrders');
 
   const getDateRange = (filter) => {
     const today = new Date();
@@ -165,129 +166,148 @@ const Payments = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', borderBottom: '1px solid #e2e8f0' }}>
+        <button 
+          onClick={() => setActiveTab('shopOrders')}
+          style={{ padding: '12px 24px', background: 'none', border: 'none', borderBottom: activeTab === 'shopOrders' ? '3px solid var(--primary-color)' : '3px solid transparent', color: activeTab === 'shopOrders' ? 'var(--primary-color)' : '#64748b', fontWeight: 600, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '-1px' }}
+        >
+          <Store size={18} /> Shop Orders (B2B)
+        </button>
+        <button 
+          onClick={() => setActiveTab('customerOrders')}
+          style={{ padding: '12px 24px', background: 'none', border: 'none', borderBottom: activeTab === 'customerOrders' ? '3px solid #8b5cf6' : '3px solid transparent', color: activeTab === 'customerOrders' ? '#8b5cf6' : '#64748b', fontWeight: 600, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '-1px' }}
+        >
+          <User size={18} /> Customer Orders (B2C)
+        </button>
+      </div>
+
+      <div>
         
-        {/* Left Column: Shop Orders */}
-        <div className="shop-orders-column">
-          <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '20px' }}>
-            <Store size={24} color="var(--primary-color)"/> Shop Orders (B2B)
-          </h2>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-             <div className="card" style={{ padding: '20px', backgroundColor: '#dcfce7', border: '1px solid #bbf7d0', boxShadow: 'none', borderRadius: '12px' }}>
-               <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Total Received</div>
-               <div style={{ fontSize: '28px', fontWeight: 700, color: '#14532d' }}>₹{shopReceived}</div>
-             </div>
-             <div className="card" style={{ padding: '20px', backgroundColor: '#fee2e2', border: '1px solid #fecaca', boxShadow: 'none', borderRadius: '12px' }}>
-               <div style={{ fontSize: '13px', color: '#b91c1c', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Total Pending</div>
-               <div style={{ fontSize: '28px', fontWeight: 700, color: '#7f1d1d' }}>₹{shopPending}</div>
-             </div>
-          </div>
+        {/* Shop Orders */}
+        {activeTab === 'shopOrders' && (
+          <div className="shop-orders-column">
+            <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '20px' }}>
+              <Store size={24} color="var(--primary-color)"/> Shop Orders Analytics
+            </h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+               <div className="card" style={{ padding: '20px', backgroundColor: '#dcfce7', border: '1px solid #bbf7d0', boxShadow: 'none', borderRadius: '12px' }}>
+                 <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Total Received</div>
+                 <div style={{ fontSize: '28px', fontWeight: 700, color: '#14532d' }}>₹{shopReceived}</div>
+               </div>
+               <div className="card" style={{ padding: '20px', backgroundColor: '#fee2e2', border: '1px solid #fecaca', boxShadow: 'none', borderRadius: '12px' }}>
+                 <div style={{ fontSize: '13px', color: '#b91c1c', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Total Pending</div>
+                 <div style={{ fontSize: '28px', fontWeight: 700, color: '#7f1d1d' }}>₹{shopPending}</div>
+               </div>
+            </div>
 
-          <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-            <div className="table-responsive">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                 <thead>
-                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>ORDER</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>SHOP</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>TOTAL</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>RECEIVED</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>PENDING</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>STATUS</th>
-                    </tr>
-                 </thead>
-                 <tbody>
-                    {loading ? (
-                       <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="var(--primary-color)" /></td></tr>
-                    ) : shopOrders.length === 0 ? (
-                       <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No shop orders found for this period.</td></tr>
-                    ) : shopOrders.map(order => {
-                       const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
-                       return (
-                         <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '12px' }}>
-                               <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>#{order.id.slice(-6).toUpperCase()}</div>
-                               <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
-                            </td>
-                            <td style={{ padding: '12px', fontWeight: 600 }}>{order.shopName}</td>
-                            <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
-                            <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
-                            <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#94a3b8', fontWeight: pending > 0 ? 600 : 400 }}>₹{pending}</td>
-                            <td style={{ padding: '12px' }}>
-                               <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : order.paymentStatus === 'Partial' ? 'status-warning' : 'status-danger'}`}>
-                                 {order.paymentStatus || 'Unpaid'}
-                               </span>
-                            </td>
-                         </tr>
-                       )
-                    })}
-                 </tbody>
-              </table>
+            <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+              <div className="table-responsive">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                   <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>ORDER</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>SHOP</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>TOTAL</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>RECEIVED</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>PENDING</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>STATUS</th>
+                      </tr>
+                   </thead>
+                   <tbody>
+                      {loading ? (
+                         <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="var(--primary-color)" /></td></tr>
+                      ) : shopOrders.length === 0 ? (
+                         <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No shop orders found for this period.</td></tr>
+                      ) : shopOrders.map(order => {
+                         const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
+                         return (
+                           <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '12px' }}>
+                                 <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>#{order.id.slice(-6).toUpperCase()}</div>
+                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
+                              </td>
+                              <td style={{ padding: '12px', fontWeight: 600 }}>{order.shopName}</td>
+                              <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
+                              <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
+                              <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#94a3b8', fontWeight: pending > 0 ? 600 : 400 }}>₹{pending}</td>
+                              <td style={{ padding: '12px' }}>
+                                 <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : order.paymentStatus === 'Partial' ? 'status-warning' : 'status-danger'}`}>
+                                   {order.paymentStatus || 'Unpaid'}
+                                 </span>
+                              </td>
+                           </tr>
+                         )
+                      })}
+                   </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Right Column: Customer Orders */}
-        <div className="customer-orders-column">
-          <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '20px' }}>
-            <User size={24} color="#8b5cf6"/> Customer Orders (B2C)
-          </h2>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-             <div className="card" style={{ padding: '20px', backgroundColor: '#fae8ff', border: '1px solid #f5d0fe', boxShadow: 'none', borderRadius: '12px' }}>
-               <div style={{ fontSize: '13px', color: '#a21caf', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Total Received</div>
-               <div style={{ fontSize: '28px', fontWeight: 700, color: '#701a75' }}>₹{customerReceived}</div>
-             </div>
-             <div className="card" style={{ padding: '20px', backgroundColor: '#fee2e2', border: '1px solid #fecaca', boxShadow: 'none', borderRadius: '12px' }}>
-               <div style={{ fontSize: '13px', color: '#b91c1c', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Total Pending</div>
-               <div style={{ fontSize: '28px', fontWeight: 700, color: '#7f1d1d' }}>₹{customerPending}</div>
-             </div>
-          </div>
+        {/* Customer Orders */}
+        {activeTab === 'customerOrders' && (
+          <div className="customer-orders-column">
+            <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '20px' }}>
+              <User size={24} color="#8b5cf6"/> Customer Orders Analytics
+            </h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+               <div className="card" style={{ padding: '20px', backgroundColor: '#fae8ff', border: '1px solid #f5d0fe', boxShadow: 'none', borderRadius: '12px' }}>
+                 <div style={{ fontSize: '13px', color: '#a21caf', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Total Received</div>
+                 <div style={{ fontSize: '28px', fontWeight: 700, color: '#701a75' }}>₹{customerReceived}</div>
+               </div>
+               <div className="card" style={{ padding: '20px', backgroundColor: '#fee2e2', border: '1px solid #fecaca', boxShadow: 'none', borderRadius: '12px' }}>
+                 <div style={{ fontSize: '13px', color: '#b91c1c', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Total Pending</div>
+                 <div style={{ fontSize: '28px', fontWeight: 700, color: '#7f1d1d' }}>₹{customerPending}</div>
+               </div>
+            </div>
 
-          <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-            <div className="table-responsive">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                 <thead>
-                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>ORDER</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>CUSTOMER</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>TOTAL</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>RECEIVED</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>PENDING</th>
-                       <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>STATUS</th>
-                    </tr>
-                 </thead>
-                 <tbody>
-                    {loading ? (
-                       <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="#8b5cf6" /></td></tr>
-                    ) : customerOrders.length === 0 ? (
-                       <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No customer orders found for this period.</td></tr>
-                    ) : customerOrders.map(order => {
-                       const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
-                       return (
-                         <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '12px' }}>
-                               <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>#{order.id.slice(-6).toUpperCase()}</div>
-                               <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
-                            </td>
-                            <td style={{ padding: '12px', fontWeight: 600 }}>{order.customerName}</td>
-                            <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
-                            <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
-                            <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#94a3b8', fontWeight: pending > 0 ? 600 : 400 }}>₹{pending}</td>
-                            <td style={{ padding: '12px' }}>
-                               <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : order.paymentStatus === 'Partial' ? 'status-warning' : 'status-danger'}`}>
-                                 {order.paymentStatus || 'Unpaid'}
-                               </span>
-                            </td>
-                         </tr>
-                       )
-                    })}
-                 </tbody>
-              </table>
+            <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+              <div className="table-responsive">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                   <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>ORDER</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>CUSTOMER</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>TOTAL</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>RECEIVED</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>PENDING</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>STATUS</th>
+                      </tr>
+                   </thead>
+                   <tbody>
+                      {loading ? (
+                         <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="#8b5cf6" /></td></tr>
+                      ) : customerOrders.length === 0 ? (
+                         <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No customer orders found for this period.</td></tr>
+                      ) : customerOrders.map(order => {
+                         const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
+                         return (
+                           <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '12px' }}>
+                                 <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>#{order.id.slice(-6).toUpperCase()}</div>
+                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
+                              </td>
+                              <td style={{ padding: '12px', fontWeight: 600 }}>{order.customerName}</td>
+                              <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
+                              <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
+                              <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#94a3b8', fontWeight: pending > 0 ? 600 : 400 }}>₹{pending}</td>
+                              <td style={{ padding: '12px' }}>
+                                 <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : order.paymentStatus === 'Partial' ? 'status-warning' : 'status-danger'}`}>
+                                   {order.paymentStatus || 'Unpaid'}
+                                 </span>
+                              </td>
+                           </tr>
+                         )
+                      })}
+                   </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>
