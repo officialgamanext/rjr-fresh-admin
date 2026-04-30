@@ -170,8 +170,8 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                 itemId: item.itemId,
                 quantity: item.quantity,
                 batchNumber: item.batchNumber || '',
-                price: item.price,
-                subtotal: item.subtotal
+                price: item.price || 0,
+                subtotal: item.subtotal || ((item.price || 0) * (item.quantity || 0)) || 0
               };
             }));
             setDiscount(orderToEdit.discount || 0);
@@ -260,7 +260,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
     setItems(updatedItems);
   };
 
-  const totalSubtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
+  const totalSubtotal = items.reduce((acc, item) => acc + (parseFloat(item.subtotal) || 0), 0);
   const subtotalAfterDiscount = Math.max(0, totalSubtotal - (parseFloat(discount) || 0));
   
   const calculatedCreditsToUse = orderToEdit 
@@ -540,7 +540,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                           <div className="price-display">₹{row.price}</div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div className="subtotal-display">₹{row.subtotal.toFixed(2)}</div>
+                          <div className="subtotal-display">₹{(row.subtotal || 0).toFixed(2)}</div>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           {!isViewOnly && (
@@ -559,7 +559,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                 <div className="summary-card">
                   <div className="summary-row">
                     <span>Total Subtotal</span>
-                    <span className="value">₹{totalSubtotal.toFixed(2)}</span>
+                    <span className="value">₹{(totalSubtotal || 0).toFixed(2)}</span>
                   </div>
                   <div className="summary-row">
                     <span>Discount Amount</span>
@@ -596,7 +596,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                   )}
                   <div className="summary-row grand-total">
                     <span>Grand Total</span>
-                    <span className="value">₹{grandTotal.toFixed(2)}</span>
+                    <span className="value">₹{(grandTotal || 0).toFixed(2)}</span>
                   </div>
                   <hr />
                   <div className="summary-row payment">
@@ -614,8 +614,8 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                   </div>
                   <div className="summary-row balance">
                     <span>Balance Due</span>
-                    <span className="value" style={{ color: balance > 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>
-                      ₹{balance.toFixed(2)}
+                    <span className="value" style={{ color: (balance || 0) > 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>
+                      ₹{(balance || 0).toFixed(2)}
                     </span>
                   </div>
                 </div>

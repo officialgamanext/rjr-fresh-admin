@@ -82,7 +82,7 @@ const ReturnOrders = () => {
         </div>
         <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', backgroundColor: '#dcfce7', border: '1px solid #bbf7d0', boxShadow: 'none' }}>
           <span style={{ fontSize: '13px', color: '#15803d', textTransform: 'uppercase', fontWeight: 700 }}>Total Refund Value</span>
-          <span style={{ fontSize: '28px', fontWeight: 800, color: '#14532d', marginTop: '8px' }}>₹{totalRefundValue.toFixed(2)}</span>
+          <span style={{ fontSize: '28px', fontWeight: 800, color: '#14532d', marginTop: '8px' }}>₹{(totalRefundValue || 0).toFixed(2)}</span>
         </div>
       </div>
 

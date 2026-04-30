@@ -236,12 +236,12 @@ const Payments = () => {
                                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
                               </td>
                               <td style={{ padding: '12px', fontWeight: 600 }}>{order.shopName}</td>
-                              <td style={{ padding: '12px', fontWeight: 600 }}>₹{order.totalSubtotal || 0}</td>
-                              <td style={{ padding: '12px', color: '#ef4444' }}>-₹{order.discount || 0}</td>
-                              <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{order.creditsUsed || 0}</td>
-                              <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
-                              <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
-                              <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#10b981', fontWeight: pending > 0 ? 700 : 400 }}>₹{pending.toFixed(2)}</td>
+                              <td style={{ padding: '12px', fontWeight: 600 }}>₹{(parseFloat(order.totalSubtotal) || 0).toFixed(2)}</td>
+                              <td style={{ padding: '12px', color: '#ef4444' }}>-₹{(parseFloat(order.discount) || 0).toFixed(2)}</td>
+                              <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{(parseFloat(order.creditsUsed) || 0).toFixed(2)}</td>
+                              <td style={{ padding: '12px', fontWeight: 700 }}>₹{(parseFloat(order.grandTotal) || 0).toFixed(2)}</td>
+                              <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{(parseFloat(order.paymentReceived) || 0).toFixed(2)}</td>
+                              <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#10b981', fontWeight: pending > 0 ? 700 : 400 }}>₹{(pending || 0).toFixed(2)}</td>
                               <td style={{ padding: '12px' }}>
                                  <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : order.paymentStatus === 'Partial' ? 'status-warning' : 'status-danger'}`}>
                                    {order.paymentStatus || 'Unpaid'}
@@ -309,8 +309,8 @@ const Payments = () => {
                                <td style={{ padding: '12px', color: '#ef4444' }}>-₹{order.discount || 0}</td>
                                <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{order.creditsUsed || 0}</td>
                                <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
-                               <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
-                               <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#10b981', fontWeight: pending > 0 ? 700 : 400 }}>₹{pending.toFixed(2)}</td>
+                               <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{(order.paymentReceived || 0).toFixed(2)}</td>
+                               <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#10b981', fontWeight: pending > 0 ? 700 : 400 }}>₹{(pending || 0).toFixed(2)}</td>
                               <td style={{ padding: '12px' }}>
                                  <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : order.paymentStatus === 'Partial' ? 'status-warning' : 'status-danger'}`}>
                                    {order.paymentStatus || 'Unpaid'}

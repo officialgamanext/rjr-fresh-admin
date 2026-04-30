@@ -525,7 +525,7 @@ const ShopDetails = () => {
                         <td style={{ fontWeight: 700, color: 'var(--primary-color)' }}>₹{order.grandTotal}</td>
                         <td style={{ fontWeight: 700, color: 'var(--success)' }}>₹{order.paymentReceived || 0}</td>
                         <td style={{ fontWeight: 700, color: (order.balance || (order.grandTotal - (order.paymentReceived || 0))) > 0 ? '#ef4444' : '#10b981' }}>
-                          ₹{(order.balance ?? (order.grandTotal - (order.paymentReceived || 0))).toFixed(2)}
+                          ₹{((order.balance ?? (order.grandTotal - (order.paymentReceived || 0))) || 0).toFixed(2)}
                         </td>
                         <td>
                           {(() => {

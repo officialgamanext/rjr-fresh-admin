@@ -245,7 +245,7 @@ const ShopOrders = () => {
                   <td style={{ padding: '12px', fontWeight: 700, color: 'var(--primary-color)' }}>₹{order.grandTotal}</td>
                   <td style={{ padding: '12px', fontWeight: 600, color: '#10b981' }}>₹{order.paymentReceived || 0}</td>
                   <td style={{ padding: '12px', fontWeight: 700, color: (order.balance || (order.grandTotal - (order.paymentReceived || 0))) > 0 ? '#ef4444' : '#10b981' }}>
-                    ₹{(order.balance ?? (order.grandTotal - (order.paymentReceived || 0))).toFixed(2)}
+                    ₹{((order.balance ?? (order.grandTotal - (order.paymentReceived || 0))) || 0).toFixed(2)}
                   </td>
                   <td style={{ padding: '12px' }}>
                     <span className={`status-badge status-${order.status === 'Delivered' ? 'success' : order.status === 'Cancelled' ? 'danger' : 'warning'}`}>

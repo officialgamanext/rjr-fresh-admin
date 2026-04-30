@@ -155,15 +155,15 @@ const CustomerOrders = () => {
         </div>
         <div className="card" style={{ padding: '20px', backgroundColor: '#fae8ff', border: '1px solid #f5d0fe', boxShadow: 'none' }}>
           <div style={{ fontSize: '12px', color: '#a21caf', fontWeight: 600, textTransform: 'uppercase' }}>Total Revenue</div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#701a75' }}>₹{Math.round(totalRevenue)}</div>
+          <div style={{ fontSize: '28px', fontWeight: 700, color: '#701a75' }}>₹{(totalRevenue || 0).toFixed(2)}</div>
         </div>
         <div className="card" style={{ padding: '20px', backgroundColor: '#dcfce7', border: '1px solid #bbf7d0', boxShadow: 'none' }}>
           <div style={{ fontSize: '12px', color: '#15803d', fontWeight: 600, textTransform: 'uppercase' }}>Payment Received</div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#14532d' }}>₹{Math.round(totalReceived)}</div>
+          <div style={{ fontSize: '28px', fontWeight: 700, color: '#14532d' }}>₹{(totalReceived || 0).toFixed(2)}</div>
         </div>
         <div className="card" style={{ padding: '20px', backgroundColor: '#fee2e2', border: '1px solid #fecaca', boxShadow: 'none' }}>
           <div style={{ fontSize: '12px', color: '#b91c1c', fontWeight: 600, textTransform: 'uppercase' }}>Payment Pending</div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#7f1d1d' }}>₹{Math.round(totalPending)}</div>
+          <div style={{ fontSize: '28px', fontWeight: 700, color: '#7f1d1d' }}>₹{(totalPending || 0).toFixed(2)}</div>
         </div>
       </div>
 
@@ -199,21 +199,21 @@ const CustomerOrders = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="#8b5cf6" /></td></tr>
+                <tr><td colSpan="11" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="#8b5cf6" /></td></tr>
               ) : filteredOrders.length === 0 ? (
-                <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#94a3b8'}}>No orders found.</td></tr>
+                <tr><td colSpan="11" style={{textAlign: 'center', padding: '40px', color: '#94a3b8'}}>No orders found.</td></tr>
               ) : filteredOrders.map(order => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '12px', fontWeight: 600 }}>#{order.id.slice(-6).toUpperCase()}</td>
                   <td style={{ padding: '12px', fontWeight: 600 }}>{order.customerName}</td>
                   <td style={{ padding: '12px', color: '#64748b' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
-                  <td style={{ padding: '12px', fontWeight: 600 }}>₹{order.totalSubtotal || 0}</td>
-                  <td style={{ padding: '12px', color: '#ef4444' }}>-₹{order.discount || 0}</td>
-                  <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{order.creditsUsed || 0}</td>
-                  <td style={{ padding: '12px', fontWeight: 700, color: '#8b5cf6' }}>₹{order.grandTotal}</td>
-                  <td style={{ padding: '12px', fontWeight: 600, color: '#10b981' }}>₹{order.paymentReceived || 0}</td>
-                  <td style={{ padding: '12px', fontWeight: 700, color: (order.balance || (order.grandTotal - (order.paymentReceived || 0))) > 0 ? '#ef4444' : '#10b981' }}>
-                    ₹{(order.balance ?? (order.grandTotal - (order.paymentReceived || 0))).toFixed(2)}
+                  <td style={{ padding: '12px', fontWeight: 600 }}>₹{(order.totalSubtotal || 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px', color: '#ef4444' }}>-₹{(order.discount || 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{(order.creditsUsed || 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px', fontWeight: 700, color: '#8b5cf6' }}>₹{(order.grandTotal || 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px', fontWeight: 600, color: '#10b981' }}>₹{(order.paymentReceived || 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px', fontWeight: 700, color: ((order.balance ?? (order.grandTotal - (order.paymentReceived || 0))) || 0) > 0 ? '#ef4444' : '#10b981' }}>
+                    ₹{((order.balance ?? (order.grandTotal - (order.paymentReceived || 0))) || 0).toFixed(2)}
                   </td>
                   <td style={{ padding: '12px' }}>
                     <span className={`status-badge status-${order.status === 'Delivered' ? 'success' : order.status === 'Cancelled' ? 'danger' : 'warning'}`}>
