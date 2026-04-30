@@ -208,22 +208,25 @@ const Payments = () => {
 
             <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
               <div className="table-responsive">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <table style={{ width: '100%', minWidth: '1000px', borderCollapse: 'collapse' }}>
                    <thead>
                       <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>ORDER</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>SHOP</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>TOTAL</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>RECEIVED</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>PENDING</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>STATUS</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>ORDER</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>SHOP</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>SUBTOTAL</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>DISCOUNT</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>CREDIT</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>GRAND TOTAL</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>RECEIVED</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>PENDING</th>
+                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>STATUS</th>
                       </tr>
                    </thead>
                    <tbody>
                       {loading ? (
-                         <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="var(--primary-color)" /></td></tr>
+                         <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="var(--primary-color)" /></td></tr>
                       ) : shopOrders.length === 0 ? (
-                         <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No shop orders found for this period.</td></tr>
+                         <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No shop orders found for this period.</td></tr>
                       ) : shopOrders.map(order => {
                          const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
                          return (
@@ -233,9 +236,12 @@ const Payments = () => {
                                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
                               </td>
                               <td style={{ padding: '12px', fontWeight: 600 }}>{order.shopName}</td>
+                              <td style={{ padding: '12px', fontWeight: 600 }}>₹{order.totalSubtotal || 0}</td>
+                              <td style={{ padding: '12px', color: '#ef4444' }}>-₹{order.discount || 0}</td>
+                              <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{order.creditsUsed || 0}</td>
                               <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
                               <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
-                              <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#94a3b8', fontWeight: pending > 0 ? 600 : 400 }}>₹{pending}</td>
+                              <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#10b981', fontWeight: pending > 0 ? 700 : 400 }}>₹{pending.toFixed(2)}</td>
                               <td style={{ padding: '12px' }}>
                                  <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : order.paymentStatus === 'Partial' ? 'status-warning' : 'status-danger'}`}>
                                    {order.paymentStatus || 'Unpaid'}
@@ -270,23 +276,26 @@ const Payments = () => {
             </div>
 
             <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-              <div className="table-responsive">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+               <div className="table-responsive">
+                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
                    <thead>
-                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>ORDER</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>CUSTOMER</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>TOTAL</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>RECEIVED</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>PENDING</th>
-                         <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>STATUS</th>
-                      </tr>
+                       <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>ORDER</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>CUSTOMER</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>SUBTOTAL</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>DISCOUNT</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>CREDIT</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>GRAND TOTAL</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>RECEIVED</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>PENDING</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>STATUS</th>
+                       </tr>
                    </thead>
                    <tbody>
                       {loading ? (
-                         <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="#8b5cf6" /></td></tr>
+                         <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="#8b5cf6" /></td></tr>
                       ) : customerOrders.length === 0 ? (
-                         <tr><td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No customer orders found for this period.</td></tr>
+                         <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No customer orders found for this period.</td></tr>
                       ) : customerOrders.map(order => {
                          const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
                          return (
@@ -295,10 +304,13 @@ const Payments = () => {
                                  <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>#{order.id.slice(-6).toUpperCase()}</div>
                                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
                               </td>
-                              <td style={{ padding: '12px', fontWeight: 600 }}>{order.customerName}</td>
-                              <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
-                              <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
-                              <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#94a3b8', fontWeight: pending > 0 ? 600 : 400 }}>₹{pending}</td>
+                               <td style={{ padding: '12px', fontWeight: 600 }}>{order.customerName}</td>
+                               <td style={{ padding: '12px', fontWeight: 600 }}>₹{order.totalSubtotal || 0}</td>
+                               <td style={{ padding: '12px', color: '#ef4444' }}>-₹{order.discount || 0}</td>
+                               <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{order.creditsUsed || 0}</td>
+                               <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
+                               <td style={{ padding: '12px', color: '#15803d', fontWeight: 600 }}>₹{order.paymentReceived || 0}</td>
+                               <td style={{ padding: '12px', color: pending > 0 ? '#b91c1c' : '#10b981', fontWeight: pending > 0 ? 700 : 400 }}>₹{pending.toFixed(2)}</td>
                               <td style={{ padding: '12px' }}>
                                  <span className={`status-badge ${order.paymentStatus === 'Paid' ? 'status-success' : order.paymentStatus === 'Partial' ? 'status-warning' : 'status-danger'}`}>
                                    {order.paymentStatus || 'Unpaid'}

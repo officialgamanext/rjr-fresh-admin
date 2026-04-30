@@ -181,16 +181,20 @@ const CustomerOrders = () => {
         </div>
 
         <div className="table-responsive">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>ORDER ID</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>CUSTOMER</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>DATE</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>TOTAL</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>BALANCE</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>STATUS</th>
-                <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', color: '#64748b' }}>ACTION</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>ORDER ID</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>CUSTOMER</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>DATE</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>SUBTOTAL</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>DISCOUNT</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>CREDIT</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>GRAND TOTAL</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>PAID</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>BALANCE</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>STATUS</th>
+                <th style={{ padding: '12px', textAlign: 'right', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
@@ -203,7 +207,11 @@ const CustomerOrders = () => {
                   <td style={{ padding: '12px', fontWeight: 600 }}>#{order.id.slice(-6).toUpperCase()}</td>
                   <td style={{ padding: '12px', fontWeight: 600 }}>{order.customerName}</td>
                   <td style={{ padding: '12px', color: '#64748b' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
-                  <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
+                  <td style={{ padding: '12px', fontWeight: 600 }}>₹{order.totalSubtotal || 0}</td>
+                  <td style={{ padding: '12px', color: '#ef4444' }}>-₹{order.discount || 0}</td>
+                  <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{order.creditsUsed || 0}</td>
+                  <td style={{ padding: '12px', fontWeight: 700, color: '#8b5cf6' }}>₹{order.grandTotal}</td>
+                  <td style={{ padding: '12px', fontWeight: 600, color: '#10b981' }}>₹{order.paymentReceived || 0}</td>
                   <td style={{ padding: '12px', fontWeight: 700, color: (order.balance || (order.grandTotal - (order.paymentReceived || 0))) > 0 ? '#ef4444' : '#10b981' }}>
                     ₹{(order.balance ?? (order.grandTotal - (order.paymentReceived || 0))).toFixed(2)}
                   </td>
