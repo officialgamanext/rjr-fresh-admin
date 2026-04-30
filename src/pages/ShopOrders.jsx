@@ -208,6 +208,7 @@ const ShopOrders = () => {
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>SHOP</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>DATE</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>TOTAL</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>BALANCE</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#64748b' }}>STATUS</th>
                 <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', color: '#64748b' }}>ACTION</th>
               </tr>
@@ -235,6 +236,9 @@ const ShopOrders = () => {
                   </td>
                   <td style={{ padding: '12px', color: '#64748b' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td style={{ padding: '12px', fontWeight: 700 }}>₹{order.grandTotal}</td>
+                  <td style={{ padding: '12px', fontWeight: 700, color: (order.balance || (order.grandTotal - (order.paymentReceived || 0))) > 0 ? '#ef4444' : '#10b981' }}>
+                    ₹{(order.balance ?? (order.grandTotal - (order.paymentReceived || 0))).toFixed(2)}
+                  </td>
                   <td style={{ padding: '12px' }}>
                     <span className={`status-badge status-${order.status === 'Delivered' ? 'success' : order.status === 'Cancelled' ? 'danger' : 'warning'}`}>
                       {order.status || 'Pending'}

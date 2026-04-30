@@ -499,10 +499,11 @@ const ShopDetails = () => {
                   <tr>
                     <th>ORDER ID</th>
                     <th>DATE</th>
-                    <th>SUBTOTAL</th>
+                    <th>TOTAL SUBTOTAL</th>
                     <th>DISCOUNT</th>
                     <th>GRAND TOTAL</th>
                     <th>PAID</th>
+                    <th>BALANCE</th>
                     <th>STATUS</th>
                     <th>ACTIONS</th>
                   </tr>
@@ -521,6 +522,9 @@ const ShopDetails = () => {
                         <td style={{ color: 'var(--danger)' }}>-₹{order.discount || 0}</td>
                         <td style={{ fontWeight: 700, color: 'var(--primary-color)' }}>₹{order.grandTotal}</td>
                         <td style={{ fontWeight: 700, color: 'var(--success)' }}>₹{order.paymentReceived || 0}</td>
+                        <td style={{ fontWeight: 700, color: (order.balance || (order.grandTotal - (order.paymentReceived || 0))) > 0 ? '#ef4444' : '#10b981' }}>
+                          ₹{(order.balance ?? (order.grandTotal - (order.paymentReceived || 0))).toFixed(2)}
+                        </td>
                         <td>
                           {(() => {
                             const paid = order.paymentReceived || 0;

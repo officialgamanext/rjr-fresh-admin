@@ -269,6 +269,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
   
   const validCreditsUsed = useCredits ? calculatedCreditsToUse : 0;
   const grandTotal = Math.max(0, subtotalAfterDiscount - validCreditsUsed);
+  const balance = Math.max(0, grandTotal - (parseFloat(paymentReceived) || 0));
 
   const sendPushNotification = async (employeeId, orderId, customerName) => {
     const employee = employees.find(e => e.id === employeeId);
@@ -336,6 +337,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         creditsUsed: validCreditsUsed,
         grandTotal,
         paymentReceived: parseFloat(paymentReceived) || 0,
+        balance,
         paymentStatus,
         paymentMethod,
         assignedTo,
@@ -609,6 +611,12 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                         disabled={isViewOnly}
                       />
                     </div>
+                  </div>
+                  <div className="summary-row balance">
+                    <span>Balance Due</span>
+                    <span className="value" style={{ color: balance > 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>
+                      ₹{balance.toFixed(2)}
+                    </span>
                   </div>
                 </div>
 
