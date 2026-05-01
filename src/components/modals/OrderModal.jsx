@@ -42,6 +42,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
   const [allInventoryItems, setAllInventoryItems] = useState([]);
   const [priceMap, setPriceMap] = useState({}); // { itemId: price }
   const [discount, setDiscount] = useState(0);
+  const [returnAmount, setReturnAmount] = useState(0);
   const [paymentReceived, setPaymentReceived] = useState(0);
   const [useCredits, setUseCredits] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -175,6 +176,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
               };
             }));
             setDiscount(orderToEdit.discount || 0);
+            setReturnAmount(orderToEdit.returnAmount || 0);
             setPaymentReceived(orderToEdit.paymentReceived || 0);
             setUseCredits((orderToEdit.creditsUsed || 0) > 0);
             setOrderStatus(orderToEdit.status || 'Ordered');
@@ -192,6 +194,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
               subtotal: 0
             }]);
             setDiscount(0);
+            setReturnAmount(0);
             setPaymentReceived(0);
             setUseCredits(false);
             setOrderStatus('Ordered');
@@ -260,15 +263,17 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
     setItems(updatedItems);
   };
 
-  const totalSubtotal = items.reduce((acc, item) => acc + (parseFloat(item.subtotal) || 0), 0);
+  // Use the stored totalSubtotal if editing, otherwise calculate from items
+  const totalSubtotal = orderToEdit?.totalSubtotal || items.reduce((acc, item) => acc + (parseFloat(item.subtotal) || 0), 0);
   const subtotalAfterDiscount = Math.max(0, totalSubtotal - (parseFloat(discount) || 0));
+  const amountToPay = Math.max(0, subtotalAfterDiscount - (parseFloat(returnAmount) || 0));
   
   const calculatedCreditsToUse = orderToEdit 
     ? (orderToEdit.creditsUsed || 0) 
-    : Math.min(entity?.credits || 0, subtotalAfterDiscount);
+    : Math.min(entity?.credits || 0, amountToPay);
   
   const validCreditsUsed = useCredits ? calculatedCreditsToUse : 0;
-  const grandTotal = Math.max(0, subtotalAfterDiscount - validCreditsUsed);
+  const grandTotal = Math.max(0, amountToPay - validCreditsUsed);
   const balance = Math.max(0, grandTotal - (parseFloat(paymentReceived) || 0));
 
   const sendPushNotification = async (employeeId, orderId, customerName) => {
@@ -334,6 +339,7 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
         })),
         totalSubtotal,
         discount: parseFloat(discount) || 0,
+        returnAmount: parseFloat(returnAmount) || 0,
         creditsUsed: validCreditsUsed,
         grandTotal,
         paymentReceived: parseFloat(paymentReceived) || 0,
@@ -569,6 +575,19 @@ const OrderModal = ({ isOpen, onClose, shop, customer, categories, orderToEdit, 
                         type="number"
                         value={discount}
                         onChange={(e) => setDiscount(e.target.value)}
+                        placeholder="0.00"
+                        disabled={isViewOnly}
+                      />
+                    </div>
+                  </div>
+                  <div className="summary-row">
+                    <span>Return Amount</span>
+                    <div className="input-with-icon">
+                      <IndianRupee size={14} />
+                      <input
+                        type="number"
+                        value={returnAmount}
+                        onChange={(e) => setReturnAmount(e.target.value)}
                         placeholder="0.00"
                         disabled={isViewOnly}
                       />

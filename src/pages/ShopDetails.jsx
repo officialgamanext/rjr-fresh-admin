@@ -501,6 +501,7 @@ const ShopDetails = () => {
                     <th style={{ whiteSpace: 'nowrap' }}>DATE</th>
                     <th style={{ whiteSpace: 'nowrap' }}>TOTAL SUBTOTAL</th>
                     <th style={{ whiteSpace: 'nowrap' }}>DISCOUNT</th>
+                    <th style={{ whiteSpace: 'nowrap' }}>RETURN</th>
                     <th style={{ whiteSpace: 'nowrap' }}>CREDIT</th>
                     <th style={{ whiteSpace: 'nowrap' }}>GRAND TOTAL</th>
                     <th style={{ whiteSpace: 'nowrap' }}>PAID</th>
@@ -521,6 +522,7 @@ const ShopDetails = () => {
                         <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                         <td style={{ fontWeight: 600 }}>₹{order.totalSubtotal || 0}</td>
                         <td style={{ color: 'var(--danger)' }}>-₹{order.discount || 0}</td>
+                        <td style={{ color: '#f59e0b' }}>-₹{order.returnAmount || 0}</td>
                         <td style={{ color: '#8b5cf6' }}>-₹{order.creditsUsed || 0}</td>
                         <td style={{ fontWeight: 700, color: 'var(--primary-color)' }}>₹{order.grandTotal}</td>
                         <td style={{ fontWeight: 700, color: 'var(--success)' }}>₹{order.paymentReceived || 0}</td>

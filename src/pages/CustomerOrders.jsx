@@ -189,6 +189,7 @@ const CustomerOrders = () => {
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>DATE</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>SUBTOTAL</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>DISCOUNT</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>RETURN</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>CREDIT</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>GRAND TOTAL</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>PAID</th>
@@ -209,6 +210,7 @@ const CustomerOrders = () => {
                   <td style={{ padding: '12px', color: '#64748b' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td style={{ padding: '12px', fontWeight: 600 }}>₹{(order.totalSubtotal || 0).toFixed(2)}</td>
                   <td style={{ padding: '12px', color: '#ef4444' }}>-₹{(order.discount || 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px', color: '#f59e0b' }}>-₹{(order.returnAmount || 0).toFixed(2)}</td>
                   <td style={{ padding: '12px', color: '#8b5cf6' }}>-₹{(order.creditsUsed || 0).toFixed(2)}</td>
                   <td style={{ padding: '12px', fontWeight: 700, color: '#8b5cf6' }}>₹{(order.grandTotal || 0).toFixed(2)}</td>
                   <td style={{ padding: '12px', fontWeight: 600, color: '#10b981' }}>₹{(order.paymentReceived || 0).toFixed(2)}</td>
