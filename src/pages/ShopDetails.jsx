@@ -665,14 +665,21 @@ const ShopDetails = () => {
                   ) : payments.length === 0 ? (
                     <tr><td colSpan="4" style={{ textAlign: 'center', padding: '60px' }}>No payments found.</td></tr>
                   ) : (
-                    payments.map(payment => (
-                      <tr key={payment.id}>
-                        <td>{new Date(payment.createdAt).toLocaleString()}</td>
-                        <td style={{ fontWeight: 600 }}>₹{payment.amount}</td>
-                        <td style={{ color: 'var(--success)' }}>₹{payment.distributedAmount || 0}</td>
-                        <td style={{ color: 'var(--warning)' }}>₹{payment.unallocatedAmount || 0}</td>
-                      </tr>
-                    ))
+                    payments.map(payment => {
+                      const formatDateTime = (val) => {
+                        if (!val) return 'N/A';
+                        const d = val.toDate ? val.toDate() : new Date(val);
+                        return isNaN(d.getTime()) ? 'N/A' : d.toLocaleString();
+                      };
+                      return (
+                        <tr key={payment.id}>
+                          <td>{formatDateTime(payment.createdAt || payment.date)}</td>
+                          <td style={{ fontWeight: 600 }}>₹{parseFloat(payment.amount || 0).toFixed(2)}</td>
+                          <td style={{ color: 'var(--success)' }}>₹{parseFloat(payment.distributedAmount || 0).toFixed(2)}</td>
+                          <td style={{ color: 'var(--warning)' }}>₹{parseFloat(payment.unallocatedAmount || 0).toFixed(2)}</td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Download, Filter, Store, User, Loader2 } from 'lucide-react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { Search, Download, Filter, Store, User, Loader2, Plus } from 'lucide-react';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import '../css/pages/dashboard.css';
 import '../css/components/table.css';
 import CustomDropdown from '../components/CustomDropdown';
+import PaymentModal from '../components/modals/PaymentModal';
 
 const dateOptions = [
   { value: 'Today', label: 'Today' },
@@ -28,6 +29,7 @@ const Payments = () => {
   const [customerOrders, setCustomerOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('shopOrders');
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const getDateRange = (filter) => {
     const today = new Date();
@@ -152,6 +154,14 @@ const Payments = () => {
         </div>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button 
+            className="btn-primary" 
+            onClick={() => setIsPaymentModalOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '8px', fontWeight: 600 }}
+          >
+            <Plus size={18} /> Add Payment
+          </button>
+
           <div style={{ width: '180px' }}>
             <CustomDropdown
               options={dateOptions}
@@ -223,18 +233,23 @@ const Payments = () => {
                       </tr>
                    </thead>
                    <tbody>
-                      {loading ? (
-                         <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="var(--primary-color)" /></td></tr>
-                      ) : shopOrders.length === 0 ? (
-                         <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No shop orders found for this period.</td></tr>
-                      ) : shopOrders.map(order => {
-                         const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
-                         return (
-                           <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '12px' }}>
-                                 <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>#{order.id.slice(-6).toUpperCase()}</div>
-                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
-                              </td>
+                        {loading ? (
+                          <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px'}}><Loader2 className="spinner" size={24} color="var(--primary-color)" /></td></tr>
+                        ) : shopOrders.length === 0 ? (
+                          <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No shop orders found for this period.</td></tr>
+                        ) : shopOrders.map(order => {
+                          const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
+                          const formatDateTime = (val) => {
+                            if (!val) return 'N/A';
+                            const d = val.toDate ? val.toDate() : new Date(val);
+                            return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+                          };
+                          return (
+                            <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                               <td style={{ padding: '12px' }}>
+                                  <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>#{order.id.slice(-6).toUpperCase()}</div>
+                                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{formatDateTime(order.updatedAt || order.createdAt)}</div>
+                               </td>
                               <td style={{ padding: '12px', fontWeight: 600 }}>{order.shopName}</td>
                               <td style={{ padding: '12px', fontWeight: 600 }}>₹{(parseFloat(order.totalSubtotal) || 0).toFixed(2)}</td>
                               <td style={{ padding: '12px', color: '#ef4444' }}>-₹{(parseFloat(order.discount) || 0).toFixed(2)}</td>
@@ -298,11 +313,16 @@ const Payments = () => {
                          <tr><td colSpan="9" style={{textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px'}}>No customer orders found for this period.</td></tr>
                       ) : customerOrders.map(order => {
                          const pending = Math.max(0, (parseFloat(order.grandTotal) || 0) - (parseFloat(order.paymentReceived) || 0));
+                         const formatDateTime = (val) => {
+                            if (!val) return 'N/A';
+                            const d = val.toDate ? val.toDate() : new Date(val);
+                            return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+                         };
                          return (
                            <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                               <td style={{ padding: '12px' }}>
                                  <div style={{ fontWeight: 600, color: 'var(--text-color)' }}>#{order.id.slice(-6).toUpperCase()}</div>
-                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{new Date(order.updatedAt || order.createdAt).toLocaleDateString()}</div>
+                                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{formatDateTime(order.updatedAt || order.createdAt)}</div>
                               </td>
                                <td style={{ padding: '12px', fontWeight: 600 }}>{order.customerName}</td>
                                <td style={{ padding: '12px', fontWeight: 600 }}>₹{order.totalSubtotal || 0}</td>
@@ -327,6 +347,10 @@ const Payments = () => {
         )}
 
       </div>
+      <PaymentModal 
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+      />
     </div>
   );
 };
