@@ -6,7 +6,8 @@ import {
   Store,
   Package,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Users
 } from 'lucide-react';
 import '../css/Sidebar.css';
 
@@ -22,6 +23,7 @@ const Sidebar = () => {
     { id: 'locations', label: 'Locations', icon: MapPin, path: '/locations' },
     { id: 'stores', label: 'Stores', icon: Store, path: '/stores' },
     { id: 'items', label: 'Items', icon: Package, path: '/items' },
+    { id: 'employees', label: 'Employees', icon: Users, path: '/employees' },
   ];
 
   return (

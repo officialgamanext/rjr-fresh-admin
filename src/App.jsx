@@ -7,6 +7,8 @@ import Locations from './pages/Locations';
 import Stores from './pages/Stores';
 import StoreDetails from './pages/StoreDetails';
 import Items from './pages/Items';
+import Employees from './pages/Employees';
+import EmployeeDetails from './pages/EmployeeDetails';
 import { Settings } from 'lucide-react';
 import { LocationProvider } from './LocationContext';
 import './css/Global.css';
@@ -25,6 +27,8 @@ function App() {
               <Route path="/stores" element={<Stores />} />
               <Route path="/stores/:id" element={<StoreDetails />} />
               <Route path="/items" element={<Items />} />
+              <Route path="/employees" element={<Employees />} />
+              <Route path="/employees/:id" element={<EmployeeDetails />} />
               {/* Fallback for other routes */}
               <Route path="*" element={<Dashboard />} />
             </Routes>
