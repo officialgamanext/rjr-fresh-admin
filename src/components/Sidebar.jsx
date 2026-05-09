@@ -1,72 +1,80 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
+  MapPin,
   Store,
-  Users,
   Package,
-  ClipboardList,
-  CreditCard,
   ChevronRight,
-  Layers,
-  Tag,
-  Box,
-  RefreshCw,
-  MapPin
+  ChevronDown
 } from 'lucide-react';
-import '../css/components/sidebar.css';
-
-import { useAuth } from '../contexts/AuthContext';
+import '../css/Sidebar.css';
 
 const Sidebar = () => {
-  const { userData } = useAuth();
-  
+  const [openSubmenu, setOpenSubmenu] = useState('proposal');
+
+  const toggleSubmenu = (menu) => {
+    setOpenSubmenu(openSubmenu === menu ? '' : menu);
+  };
+
   const navItems = [
-    { title: 'Dashboard', icon: <LayoutDashboard />, path: '/', key: 'dashboard' },
-    { title: 'Shops', icon: <Store />, path: '/shops', key: 'shops' },
-    { title: 'Shop Visits', icon: <MapPin />, path: '/shop-visits', key: 'shopVisits' },
-    { title: 'Shop Orders', icon: <Package />, path: '/shop-orders', key: 'shopOrders' },
-    { title: 'Return Orders', icon: <RefreshCw />, path: '/return-orders', key: 'returnOrders' },
-    { title: 'Payments', icon: <CreditCard />, path: '/payments', key: 'payments' },
-    { title: 'Customers', icon: <Users />, path: '/customers', key: 'customers' },
-    { title: 'Customer Orders', icon: <Package />, path: '/customer-orders', key: 'customerOrders' },
-    { title: 'Customer Prices', icon: <Tag />, path: '/customer-prices', key: 'customerPrices' },
-    { title: 'Batches', icon: <Box />, path: '/batches', key: 'batches' },
-    { title: 'Items', icon: <Package />, path: '/items', key: 'items' },
-    { title: 'Item Categories', icon: <Layers />, path: '/categories', key: 'categories' },
-    { title: 'Price List', icon: <ClipboardList />, path: '/pricelist', key: 'priceList' },
-    { title: 'Employees', icon: <Users />, path: '/employees', key: 'employees' },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { id: 'locations', label: 'Locations', icon: MapPin, path: '/locations' },
+    { id: 'stores', label: 'Stores', icon: Store, path: '/stores' },
+    { id: 'items', label: 'Items', icon: Package, path: '/items' },
   ];
 
-  const filteredNavItems = navItems.filter(item => {
-    if (userData?.isSuperAdmin) return true;
-    return userData?.access?.admin?.[item.key];
-  });
-
   return (
-    <aside className="sidebar">
+    <aside className="sidebar-container">
       <div className="sidebar-logo">
-        RJR FRESH
+        <h1 className="logo-text">RJR FRESH</h1>
       </div>
 
       <div className="sidebar-nav">
-        <div className="nav-section">
-          <h3 className="section-title">Navigation</h3>
-          <ul className="nav-list">
-            {filteredNavItems.map((item) => (
-              <li key={item.path}>
+        <p className="nav-subtitle">NAVIGATION</p>
+        <ul className="nav-list">
+          {navItems.map((item) => (
+            <li key={item.id} className="nav-item">
+              {item.hasSub ? (
+                <div
+                  className={`nav-link-dropdown ${openSubmenu === item.id ? 'active' : ''}`}
+                  onClick={() => toggleSubmenu(item.id)}
+                >
+                  <div className="nav-link-content">
+                    <item.icon size={18} className="nav-icon" />
+                    <span className="nav-label">{item.label}</span>
+                  </div>
+                  {openSubmenu === item.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </div>
+              ) : (
                 <NavLink
                   to={item.path}
-                  className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  {item.icon}
-                  <span>{item.title}</span>
-                  <ChevronRight className="nav-item-chevron" />
+                  <div className="nav-link-content">
+                    <item.icon size={18} className="nav-icon" />
+                    <span className="nav-label">{item.label}</span>
+                  </div>
                 </NavLink>
-              </li>
-            ))}
-          </ul>
-        </div>
+              )}
+
+              {item.hasSub && openSubmenu === item.id && item.subItems && (
+                <ul className="submenu-list">
+                  {item.subItems.map((sub, idx) => (
+                    <li key={idx}>
+                      <NavLink
+                        to={sub.path}
+                        className={({ isActive }) => `submenu-link ${isActive ? 'active' : ''}`}
+                      >
+                        {sub.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
     </aside>
   );

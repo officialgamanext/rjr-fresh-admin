@@ -1,569 +1,233 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Search, 
-  Tag, 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  X, 
+import '../css/Items.css';
+import {
+  Package,
+  Plus,
+  X,
   Loader2,
-  Layers
+  Search,
+  Trash2,
+  Pencil,
+  Tag,
+  IndianRupee,
+  Layers,
+  MoreVertical
 } from 'lucide-react';
-import { 
-  collection, 
-  addDoc, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  deleteDoc, 
-  doc, 
-  updateDoc,
-  where
-} from 'firebase/firestore';
 import { db } from '../firebase';
-import { useLocation } from '../contexts/LocationContext';
-import toast from 'react-hot-toast';
-import ConfirmModal from '../components/ConfirmModal';
-import CustomDropdown from '../components/CustomDropdown';
-import '../css/pages/dashboard.css';
-import '../css/components/table.css';
-import '../css/components/modal.css';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  deleteDoc
+} from 'firebase/firestore';
 
 const Items = () => {
-  const { selectedLocation, locations } = useLocation();
   const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  
-  const [editingItem, setEditingItem] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, itemId: null });
+  const [showForm, setShowForm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState({ name: '', price: '', unit: 'pcs', category: 'General' });
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    unit: 'kg',
-    hsnCode: '',
-    locationId: '',
-    forCustomerOnly: false
-  });
-
-  const [categoryData, setCategoryData] = useState({
-    name: '',
-    shortCode: ''
-  });
-
-  // Fetch items
   useEffect(() => {
-    setLoading(true);
-    let q;
-    if (selectedLocation === 'all') {
-      q = query(collection(db, 'items'), orderBy('name', 'asc'));
-    } else {
-      q = query(collection(db, 'items'), where('locationId', '==', selectedLocation));
-    }
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const itemsData = [];
-      querySnapshot.forEach((doc) => {
-        itemsData.push({ id: doc.id, ...doc.data() });
-      });
-      
-      if (selectedLocation !== 'all') {
-        itemsData.sort((a, b) => a.name.localeCompare(b.name));
-      }
-      
-      setItems(itemsData);
-      setLoading(false);
-    }, (error) => {
-      toast.error("Error loading items.");
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [selectedLocation]);
-
-  // Fetch categories
-  useEffect(() => {
-    const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const cats = [];
-      querySnapshot.forEach((doc) => {
-        cats.push({ id: doc.id, ...doc.data() });
-      });
-      setCategories(cats);
-    });
-    return () => unsubscribe();
+    fetchItems();
   }, []);
+
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
+      const q = query(collection(db, 'items'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const itemList = [];
+      querySnapshot.forEach((doc) => {
+        itemList.push({ id: doc.id, ...doc.data() });
+      });
+      setItems(itemList);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCategoryInputChange = (e) => {
-    const { name, value } = e.target;
-    setCategoryData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleOpenModal = (item = null) => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({
-        name: item.name,
-        category: item.category,
-        unit: item.unit,
-        hsnCode: item.hsnCode || '',
-        locationId: item.locationId || '',
-        forCustomerOnly: item.forCustomerOnly || false
-      });
-    } else {
-      setEditingItem(null);
-      setFormData({
-        name: '',
-        category: categories.length > 0 ? categories[0].name : '',
-        unit: 'kg',
-        hsnCode: '',
-        locationId: selectedLocation !== 'all' ? selectedLocation : '',
-        forCustomerOnly: false
-      });
-    }
-    setIsModalOpen(true);
-  };
-
   const handleSaveItem = async (e) => {
     e.preventDefault();
-    if (!formData.category) {
-      toast.error("Please select a category first.");
-      return;
-    }
-    if (!formData.locationId) {
-      toast.error("Please select a location.");
-      return;
-    }
-    setSaving(true);
-    const saveToast = toast.loading(editingItem ? 'Updating item...' : 'Adding item...');
+    if (!formData.name.trim()) return;
+
     try {
-      if (editingItem) {
-        await updateDoc(doc(db, 'items', editingItem.id), {
+      setIsSaving(true);
+      if (editingId) {
+        await updateDoc(doc(db, "items", editingId), {
           ...formData,
-          updatedAt: new Date().toISOString()
+          price: parseFloat(formData.price)
         });
-        toast.success('Item updated successfully!', { id: saveToast });
       } else {
-        await addDoc(collection(db, 'items'), {
+        await addDoc(collection(db, "items"), {
           ...formData,
-          createdAt: new Date().toISOString()
+          price: parseFloat(formData.price),
+          createdAt: serverTimestamp()
         });
-        toast.success('Item added successfully!', { id: saveToast });
       }
-      setIsModalOpen(false);
+
+      setFormData({ name: '', price: '', unit: 'pcs', category: 'General' });
+      setEditingId(null);
+      setShowForm(false);
+      fetchItems();
     } catch (error) {
-      toast.error("Error saving item.", { id: saveToast });
+      console.error("Error saving item:", error);
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
-  const handleSaveCategory = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const catToast = toast.loading('Adding category...');
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setFormData({ name: item.name, price: item.price, unit: item.unit, category: item.category });
+    setShowForm(true);
+  };
+
+  const handleDeleteItem = async (id) => {
+    if (!window.confirm("Delete this item?")) return;
     try {
-      await addDoc(collection(db, 'categories'), {
-        ...categoryData,
-        createdAt: new Date().toISOString()
-      });
-      toast.success('Category added!', { id: catToast });
-      setCategoryData({ name: '', shortCode: '' });
-      setIsCategoryModalOpen(false);
+      await deleteDoc(doc(db, "items", id));
+      fetchItems();
     } catch (error) {
-      toast.error("Error adding category.", { id: catToast });
-    } finally {
-      setSaving(false);
+      console.error("Error deleting item:", error);
     }
   };
 
-  const handleDeleteItem = async () => {
-    const deleteToast = toast.loading('Deleting item...');
-    try {
-      await deleteDoc(doc(db, 'items', confirmDelete.itemId));
-      toast.success('Item deleted successfully!', { id: deleteToast });
-    } catch (error) {
-      toast.error("Error deleting item.", { id: deleteToast });
-    }
-  };
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="items-page">
+    <div className="page-wrapper">
       <div className="page-header">
-        <div>
-          <h1>Inventory Items</h1>
-          <div className="breadcrumb">
-            <span>Home</span>
-            <span>&gt;</span>
-            <span className="breadcrumb-item active">Items List</span>
-          </div>
+        <div className="header-title-section">
+          <h2 className="page-title">Items Management</h2>
+          <p className="subtitle">Manage your product catalog</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn-secondary" onClick={() => setIsCategoryModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Layers size={18} />
-            Add Category
-          </button>
-          <button className="btn-primary" onClick={() => handleOpenModal()}>
-            <Plus size={20} />
-            Add Item
-          </button>
-        </div>
+        <button
+          className={showForm ? 'btn-danger' : 'btn-primary'}
+          onClick={() => {
+            setShowForm(!showForm);
+            setEditingId(null);
+            setFormData({ name: '', price: '', unit: 'pcs', category: 'General' });
+          }}
+        >
+          {showForm ? <><X size={18} /> Cancel</> : <><Plus size={18} /> Add New Item</>}
+        </button>
       </div>
 
-      <div className="card">
-        <div className="card-header">
-          <div style={{ position: 'relative' }}>
-            <input 
-              type="text" 
-              placeholder="Search items..." 
-              className="form-control"
-              style={{ paddingLeft: '36px', width: '300px' }} 
-            />
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-          </div>
-        </div>
-        <div className="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>ITEM NAME</th>
-                <th>CATEGORY</th>
-                <th>UNIT</th>
-                <th>HSN</th>
-                <th>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
-                    <Loader2 className="spinner" size={24} />
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>No items found.</td>
-                </tr>
-              ) : (
-                items.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Tag size={16} color="var(--primary-color)" />
-                        <span style={{ fontWeight: 600 }}>{item.name}</span>
-                        {item.forCustomerOnly && (
-                          <span className="status-badge" style={{ backgroundColor: '#fef2f2', color: '#ef4444', fontSize: '10px', marginLeft: '4px' }}>
-                            B2C Only
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="status-badge" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary-color)', fontWeight: 600 }}>
-                        {item.category}
-                      </span>
-                    </td>
-                    <td><span className="status-badge" style={{ backgroundColor: '#f1f5f9' }}>{item.unit}</span></td>
-                    <td>{item.hsnCode || 'N/A'}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="action-btn-ui" onClick={() => handleOpenModal(item)} title="Edit">
-                          <Edit size={18} color="#3b71fe" />
-                        </button>
-                        <button className="action-btn-ui" onClick={() => setConfirmDelete({ isOpen: true, itemId: item.id })} title="Delete">
-                          <Trash2 size={18} color="#ef4444" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Item Modal */}
-      {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content custom-modal">
-            <div className="modal-header">
-              <div className="header-icon-title">
-                <div className="header-icon-box">
-                  <Tag size={20} color="var(--primary-color)" />
-                </div>
-                <h2>{editingItem ? 'Edit Item' : 'Add New Item'}</h2>
+      {showForm && (
+        <div className="add-item-section">
+          <form onSubmit={handleSaveItem} className="add-item-form">
+            <div className="form-group">
+              <label>Item Name</label>
+              <div className="input-with-icon">
+                <Tag size={16} />
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter item name..."
+                  autoFocus
+                />
               </div>
-              <button className="close-btn" onClick={() => setIsModalOpen(false)}><X size={24} /></button>
             </div>
-            <form onSubmit={handleSaveItem}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Location</label>
-                  <CustomDropdown
-                    options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
-                    value={formData.locationId}
-                    onChange={(val) => handleInputChange({ target: { name: 'locationId', value: val } })}
-                    placeholder="Select Location"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Item Name</label>
-                  <div className="input-with-icon-premium">
-                    <div className="icon-wrapper"><Tag size={18} /></div>
-                    <input 
-                      type="text" 
-                      name="name" 
-                      className="form-control premium-input" 
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Fresh Tomato"
-                      required 
-                    />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Category</label>
-                  {categories.length === 0 ? (
-                    <div style={{ padding: '12px', backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', color: '#b91c1c', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <X size={16} /> Please add a category first!
-                    </div>
-                  ) : (
-                    <div className="input-with-icon-premium">
-                      <div className="icon-wrapper"><Layers size={18} /></div>
-                      <CustomDropdown
-                        options={categories.map(cat => ({ value: cat.name, label: `${cat.name} (${cat.shortCode})` }))}
-                        value={formData.category}
-                        onChange={(val) => handleInputChange({ target: { name: 'category', value: val } })}
-                        placeholder="Select Category"
-                        searchable
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="form-row-grid">
-                  <div className="form-group">
-                    <label>Unit</label>
-                    <CustomDropdown
-                      options={[
-                        { value: 'kg', label: 'kg' },
-                        { value: 'gram', label: 'g' },
-                        { value: 'pcs', label: 'pcs' },
-                        { value: 'ltr', label: 'ltr' },
-                        { value: 'box', label: 'Box' },
-                        { value: 'pkt', label: 'Pkt' }
-                      ]}
-                      value={formData.unit}
-                      onChange={(val) => handleInputChange({ target: { name: 'unit', value: val } })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>HSN Code</label>
-                    <input 
-                      type="text" 
-                      name="hsnCode" 
-                      className="form-control premium-input" 
-                      value={formData.hsnCode}
-                      onChange={handleInputChange}
-                      placeholder="Optional"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group" style={{ marginTop: '8px' }}>
-                  <label className="checkbox-container">
-                    <input 
-                      type="checkbox" 
-                      name="forCustomerOnly" 
-                      checked={formData.forCustomerOnly} 
-                      onChange={(e) => setFormData(prev => ({ ...prev, forCustomerOnly: e.target.checked }))} 
-                    />
-                    <span className="checkmark"></span>
-                    <span style={{ marginLeft: '32px', fontSize: '14px', fontWeight: 500 }}>This item is only for Customers (B2C)</span>
-                  </label>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '32px', marginTop: '4px' }}>
-                    If checked, this item will not appear in Shop (B2B) orders.
-                  </p>
-                </div>
+            <div className="form-group full">
+              <label>Price</label>
+              <div className="input-with-icon">
+                <IndianRupee size={16} />
+                <input
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                />
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-secondary-premium" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-primary-premium" disabled={saving || categories.length === 0}>
-                  {saving ? <Loader2 size={18} className="spinner" /> : (editingItem ? 'Update Item' : 'Save Item')}
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+            <button type="submit" className="btn-save" disabled={isSaving}>
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : (editingId ? 'Update' : 'Save')}
+            </button>
+          </form>
         </div>
       )}
 
-      {/* Category Modal */}
-      {isCategoryModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content custom-modal" style={{ maxWidth: '450px' }}>
-            <div className="modal-header">
-              <div className="header-icon-title">
-                <div className="header-icon-box">
-                  <Layers size={20} color="var(--primary-color)" />
+      <div className="items-toolbar">
+        <div className="search-bar-modern">
+          <Search size={20} />
+          <input
+            type="text"
+            placeholder="Search items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="loading-state">
+          <Loader2 size={40} className="animate-spin" />
+          <p>Loading items...</p>
+        </div>
+      ) : (
+        <div className="items-grid">
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => (
+              <div key={item.id} className="item-card">
+                <div className="item-card-header">
+                  <div className="category-tag"><Layers size={14} />{item.category || 'General'}</div>
+                  <div className="card-actions">
+                    <button className="btn-icon-sm" onClick={() => startEdit(item)}>
+                      <Pencil size={16} />
+                    </button>
+                    <button className="btn-icon-sm delete" onClick={() => handleDeleteItem(item.id)}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
-                <h2>Add New Category</h2>
+                <div className="item-card-body">
+                  <div className="item-icon-wrapper">
+                    <Package size={24} />
+                  </div>
+                  <h4 className="item-name">{item.name}</h4>
+                </div>
+                {/* <div className="item-card-footer">
+                  <div className="price-info">
+                    <span className="price-amount">₹{item.price}</span>
+                    <span className="unit-label">/ {item.unit}</span>
+                  </div>
+                  <span className="item-id-text">ID: {item.id.slice(0, 8)}</span>
+                  <button className="btn-view-more">
+                    <MoreVertical size={16} />
+                  </button>
+                </div> */}
               </div>
-              <button className="close-btn" onClick={() => setIsCategoryModalOpen(false)}><X size={24} /></button>
+            ))
+          ) : (
+            <div className="empty-state">
+              <p>No items found.</p>
             </div>
-            <form onSubmit={handleSaveCategory}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Category Name</label>
-                  <input 
-                    type="text" 
-                    name="name" 
-                    className="form-control premium-input" 
-                    value={categoryData.name}
-                    onChange={handleCategoryInputChange}
-                    placeholder="e.g. Vegetables"
-                    style={{ paddingLeft: '14px !important' }}
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Short Code</label>
-                  <input 
-                    type="text" 
-                    name="shortCode" 
-                    className="form-control premium-input" 
-                    value={categoryData.shortCode}
-                    onChange={handleCategoryInputChange}
-                    placeholder="e.g. VEG"
-                    style={{ paddingLeft: '14px !important' }}
-                    required 
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-secondary-premium" onClick={() => setIsCategoryModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-primary-premium" disabled={saving}>
-                  {saving ? <Loader2 size={18} className="spinner" /> : 'Save Category'}
-                </button>
-              </div>
-            </form>
-          </div>
+          )}
         </div>
       )}
-
-      <ConfirmModal 
-        isOpen={confirmDelete.isOpen}
-        onClose={() => setConfirmDelete({ isOpen: false, itemId: null })}
-        onConfirm={handleDeleteItem}
-        title="Delete Item"
-        message="Are you sure you want to delete this item?"
-      />
-
-      <style>{`
-        .action-btn-ui { padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; border: none; background: transparent; cursor: pointer; }
-        .action-btn-ui:hover { background-color: #f1f5f9; }
-        
-        .custom-modal { max-width: 550px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
-        .header-icon-title { display: flex; align-items: center; gap: 12px; }
-        .header-icon-box { width: 40px; height: 40px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-        
-        .form-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        
-        .input-with-icon-premium { position: relative; display: flex; align-items: center; }
-        .input-with-icon-premium .icon-wrapper { position: absolute; left: 14px; color: var(--text-muted); z-index: 10; display: flex; align-items: center; justify-content: center; height: 100%; }
-        
-        .premium-input { 
-          padding: 12px 14px 12px 44px !important; 
-          border: 1.5px solid #e2e8f0 !important; 
-          border-radius: 12px !important; 
-          font-size: 14px !important;
-          transition: all 0.2s ease !important;
-          background-color: #fcfcfd !important;
-          width: 100%;
-        }
-        .premium-input:focus { 
-          border-color: var(--primary-color) !important; 
-          background-color: #fff !important;
-          box-shadow: 0 0 0 4px rgba(59, 113, 254, 0.1) !important;
-          outline: none;
-        }
-        
-        .btn-primary-premium {
-          background-color: var(--primary-color);
-          color: white;
-          padding: 12px 24px;
-          border-radius: 12px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.2s;
-          cursor: pointer;
-          border: none;
-        }
-        .btn-primary-premium:hover:not(:disabled) { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 113, 254, 0.2); }
-        .btn-primary-premium:disabled { opacity: 0.7; cursor: not-allowed; }
-        
-        .btn-secondary-premium {
-          padding: 12px 24px;
-          border-radius: 12px;
-          font-weight: 600;
-          color: var(--text-secondary);
-          background-color: #f1f5f9;
-          transition: all 0.2s;
-          cursor: pointer;
-          border: none;
-        }
-        .btn-secondary-premium:hover { background-color: #e2e8f0; }
-
-        .spinner { animation: rotate 1s linear infinite; }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .checkbox-container {
-          display: block;
-          position: relative;
-          cursor: pointer;
-          user-select: none;
-        }
-        .checkbox-container input {
-          position: absolute;
-          opacity: 0;
-          cursor: pointer;
-          height: 0; width: 0;
-        }
-        .checkmark {
-          position: absolute;
-          top: 0; left: 0;
-          height: 22px; width: 22px;
-          background-color: #f1f5f9;
-          border-radius: 6px;
-          border: 1.5px solid #e2e8f0;
-          transition: all 0.2s;
-        }
-        .checkbox-container:hover input ~ .checkmark { background-color: #e2e8f0; }
-        .checkbox-container input:checked ~ .checkmark { background-color: var(--primary-color); border-color: var(--primary-color); }
-        .checkmark:after {
-          content: "";
-          position: absolute;
-          display: none;
-        }
-        .checkbox-container input:checked ~ .checkmark:after { display: block; }
-        .checkbox-container .checkmark:after {
-          left: 7px; top: 3px;
-          width: 5px; height: 10px;
-          border: solid white;
-          border-width: 0 2px 2px 0;
-          transform: rotate(45deg);
-        }
-      `}</style>
     </div>
   );
 };

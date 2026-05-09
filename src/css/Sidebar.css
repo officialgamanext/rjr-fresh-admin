@@ -1,0 +1,139 @@
+.sidebar-container {
+  width: var(--sidebar-width);
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.sidebar-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-container::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.sidebar-logo {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #000;
+}
+
+.sidebar-nav {
+  padding: 24px 0;
+}
+
+.nav-subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 0 24px 16px;
+  letter-spacing: 1px;
+}
+
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.nav-link,
+.nav-link-dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  color: var(--text-main);
+  transition: var(--transition);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nav-link:hover,
+.nav-link-dropdown:hover {
+  background-color: #f1f5f9;
+  color: var(--primary-color);
+}
+
+.nav-link.active,
+.nav-link-dropdown.active {
+  background-color: #f1f5f9;
+  color: var(--primary-color);
+  border-right: 3px solid var(--primary-color);
+}
+
+.nav-link-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-icon {
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+
+.nav-link:hover .nav-icon,
+.nav-link.active .nav-icon,
+.nav-link-dropdown:hover .nav-icon,
+.nav-link-dropdown.active .nav-icon {
+  color: var(--primary-color);
+}
+
+.nav-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.submenu-list {
+  background-color: #f8fafc;
+  padding: 8px 0;
+  margin: 4px 12px;
+  border-radius: 8px;
+}
+
+.submenu-link {
+  display: block;
+  padding: 8px 24px 8px 54px;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.submenu-link:hover {
+  color: var(--primary-color);
+}
+
+.submenu-link.active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+@media (max-width: 991px) {
+  .sidebar-container {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-container.open {
+    transform: translateX(0);
+  }
+}
