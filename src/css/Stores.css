@@ -1550,3 +1550,20 @@ input:checked+.slider:before {
 }
 
 .mb-20 { margin-bottom: 20px; }
+.edit-info-rows {
+  padding: 8px 0;
+  margin: 8px 0;
+  border-top: 1px dashed var(--border-color);
+  border-bottom: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-info-rows .summary-row {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.text-danger { color: #ef4444 !important; }
+.text-success { color: #10b981 !important; }

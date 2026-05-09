@@ -550,14 +550,35 @@ const StoreDetails = () => {
                {saleOrders.length === 0 ? <p className="no-data">No sale orders yet.</p> : (
                  <div className="data-table-wrapper">
                     <table className="data-table">
-                      <thead><tr><th>Order ID</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Order ID</th>
+                          <th>Date</th>
+                          <th>Items</th>
+                          <th>Subtotal</th>
+                          <th>Discount</th>
+                          <th>Credit</th>
+                          <th>Returns</th>
+                          <th>Total</th>
+                          <th>Payable</th>
+                          <th>Paid</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
                       <tbody>
                         {saleOrders.map(order => (
                           <tr key={order.id}>
                             <td><span className="order-id-cell">#{order.id.slice(0,6).toUpperCase()}</span></td>
                             <td>{order.createdAt?.toDate().toLocaleDateString()}</td>
                             <td>{order.items.length} Items</td>
+                            <td>₹{order.subtotal || 0}</td>
+                            <td>₹{order.discount || 0}</td>
+                            <td>₹{order.creditUsed || 0}</td>
+                            <td>₹{order.returnedValue || 0}</td>
                             <td>₹{order.grandTotal}</td>
+                            <td>₹{order.netPayable || order.grandTotal}</td>
+                            <td>₹{order.paidAmount || 0}</td>
                             <td><span className={`status-tag ${order.paymentStatus.toLowerCase()}`}>{order.paymentStatus}</span></td>
                             <td>
                               <div className="table-actions">
@@ -1021,6 +1042,15 @@ const StoreDetails = () => {
                       <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
                       <div className="summary-row"><span>Discount</span><input type="number" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value || 0))} /></div>
                       <div className="summary-row"><span>Use Credit (Avail: ₹{creditBalance})</span><label className="toggle-switch"><input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)}/><span className="slider"></span></label></div>
+                      
+                      {editingOrder && (
+                        <div className="edit-info-rows">
+                           {editingOrder.returnedValue > 0 && <div className="summary-row text-danger"><span>Returned Value</span><span>-₹{editingOrder.returnedValue}</span></div>}
+                           <div className="summary-row"><span>Net Payable</span><span>₹{editingOrder.netPayable || grandTotal}</span></div>
+                           <div className="summary-row text-success"><span>Paid Amount</span><span>₹{editingOrder.paidAmount || 0}</span></div>
+                        </div>
+                      )}
+
                       <div className="summary-row grand-total"><span>Grand Total</span><span>₹{grandTotal}</span></div>
                    </div>
                    {!editingOrder && (
