@@ -1283,4 +1283,270 @@ input:checked+.slider:before {
   background: white;
   border-radius: 16px;
   border: 1px solid var(--border-color);
+}/* Credit Tab Styles */
+.credit-summary-card {
+  background: linear-gradient(135deg, var(--primary-color), #818cf8);
+  border-radius: 16px;
+  padding: 30px;
+  color: white;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
 }
+
+.balance-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.balance-info .label {
+  font-size: 14px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.balance-info .balance-amount {
+  font-size: 32px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.text-success { color: #10b981 !important; }
+.text-danger { color: #ef4444 !important; }
+
+/* Return Modal Styles */
+.order-picker-section {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.orders-list-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-pick-card {
+  padding: 16px;
+  background-color: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.order-pick-card:hover {
+  border-color: var(--primary-color);
+  background-color: #f1f5ff;
+}
+
+.order-pick-card .o-id {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.order-pick-card .o-date {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.order-pick-card .o-total {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.selected-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.btn-back-mini {
+  background: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.return-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.return-item-row .it-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.return-item-row .it-price {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.return-summary {
+  background-color: #f8fafc;
+  padding: 16px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.return-summary strong {
+  color: var(--primary-color);
+  font-size: 18px;
+}
+
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+.mt-24 { margin-top: 24px; }
+.p-24 { padding: 24px; }
+/* Bulk Payment Allocation Styles */
+.allocation-preview {
+  background-color: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.section-subtitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.orders-to-pay-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.alloc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+}
+
+.alloc-row.active {
+  opacity: 1;
+  border-color: var(--primary-color);
+  background-color: #f5f7ff;
+  transform: translateX(4px);
+}
+
+.o-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.o-meta .o-id {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.o-meta .o-bal {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.o-alloc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alloc-tag {
+  background-color: #ecfdf5;
+  color: #059669;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #d1fae5;
+}
+
+.input-lg {
+  height: 54px !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  color: var(--primary-color) !important;
+  text-align: center;
+  border: 2px solid var(--primary-color) !important;
+  background-color: #f5f7ff !important;
+}
+
+.mt-10 { margin-top: 10px; }
+/* Bulk Payment Enhanced Styles */
+.pending-stats-bar {
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stat-item .s-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #991b1b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-item .s-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.checkbox-mini {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.checkbox-mini.checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.alloc-row .o-check {
+  margin-right: 4px;
+}
+
+.mb-20 { margin-bottom: 20px; }
