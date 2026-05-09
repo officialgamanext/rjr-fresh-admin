@@ -106,8 +106,8 @@ const StoreDetails = () => {
 
   // Payment Edit Form State
   const [payFormData, setPayFormData] = useState({ amount: 0, method: 'Cash', status: 'Awaiting Confirmation' });
-
   const [paymentImage, setPaymentImage] = useState(null);
+  const [editPaymentImage, setEditPaymentImage] = useState(null);
   
   // Return Order Form State
   const [selectedOrderForReturn, setSelectedOrderForReturn] = useState(null);
@@ -134,6 +134,12 @@ const StoreDetails = () => {
     { id: 'credits', label: 'Credit' },
     { id: 'checkins', label: 'Checkins' }
   ];
+
+  useEffect(() => {
+    if (!import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY) {
+      console.error("VITE_IMAGEKIT_PUBLIC_KEY is missing from ENV");
+    }
+  }, []);
 
   useEffect(() => { fetchStore(); fetchSaleOrders(); }, [id]);
   useEffect(() => {
@@ -308,14 +314,31 @@ const StoreDetails = () => {
       const netPayable = grandTotal - (useCredit ? Math.min(creditBalance, grandTotal) : 0);
       
       let upiUrl = "";
-      if (paymentMethod === 'UPI' && paymentAmount > 0) {
-        if (!paymentImage) { alert("Please upload UPI payment screenshot."); return; }
-        const compressed = await compressImage(paymentImage);
-        upiUrl = await uploadToImageKit(compressed, `upi_${id}_${Date.now()}.jpg`);
+      if (paymentMethod === 'UPI') {
+        // If they select UPI, we check if they actually have an image selected
+        // This avoids skipping if the amount check is finicky
+        if (paymentImage) {
+          try {
+            alert("Starting UPI Upload for Sale Order...");
+            console.log("Processing UPI image for Sale Order...");
+            const compressed = await compressImage(paymentImage);
+            upiUrl = await uploadToImageKit(compressed, `upi_${id}_${Date.now()}.jpg`);
+            console.log("UPI Upload Success:", upiUrl);
+          } catch (imgErr) {
+            alert("Sale Order Image Upload Failed: " + imgErr.message);
+            setIsSaving(false);
+            return;
+          }
+        } else if (parseFloat(paymentAmount) > 0) {
+          alert("Error: UPI Screenshot is mandatory for UPI payments.");
+          setIsSaving(false);
+          return;
+        }
       }
 
-      // 1. Create Sale Order
-      const orderRef = doc(collection(db, `stores/${id}/sales`));
+      // 1. Prepare Order Data
+      const orderRef = editingOrder ? doc(db, `stores/${id}/sales`, editingOrder.id) : doc(collection(db, `stores/${id}/sales`));
+      
       const orderData = {
         items: cart,
         subtotal,
@@ -323,28 +346,40 @@ const StoreDetails = () => {
         creditUsed: useCredit ? (creditBalance > grandTotal ? grandTotal : creditBalance) : 0,
         grandTotal,
         netPayable,
-        returnedValue: 0,
-        paidAmount: parseFloat(paymentAmount || 0),
-        paymentStatus: parseFloat(paymentAmount || 0) >= netPayable ? 'Paid' : (parseFloat(paymentAmount || 0) > 0 ? 'Partial' : 'Unpaid'),
-        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         useCredit
       };
-      batch.set(orderRef, orderData);
 
-      // 2. Save Initial Payment if any
-      if (paymentAmount > 0) {
+      if (!editingOrder) {
+        orderData.returnedValue = 0;
+        orderData.paidAmount = parseFloat(paymentAmount || 0);
+        orderData.paymentStatus = parseFloat(paymentAmount || 0) >= netPayable ? 'Paid' : (parseFloat(paymentAmount || 0) > 0 ? 'Partial' : 'Unpaid');
+        orderData.upiImage = upiUrl || ""; // Explicitly set even if empty
+        orderData.createdAt = serverTimestamp();
+        console.log("Saving NEW Order Data:", orderData);
+        batch.set(orderRef, orderData);
+      } else {
+        if (upiUrl) orderData.upiImage = upiUrl;
+        console.log("Updating EXISTING Order Data:", orderData);
+        batch.update(orderRef, orderData);
+      }
+
+      // 2. Save Initial Payment if any (only for NEW orders)
+      if (!editingOrder && parseFloat(paymentAmount) > 0) {
         const payRef = doc(collection(db, `stores/${id}/payments`));
-        batch.set(payRef, {
+        const payData = {
           amount: parseFloat(paymentAmount),
           method: paymentMethod,
           status: 'Confirmed',
           orderId: orderRef.id,
-          upiImage: upiUrl,
+          upiImage: upiUrl || "",
           createdAt: serverTimestamp()
-        });
+        };
+        console.log("Saving Initial Payment Record:", payData);
+        batch.set(payRef, payData);
       }
 
+      // 3. Update Credit Balance
       if (useCredit && orderData.creditUsed > 0) {
         const storeRef = doc(db, "stores", id);
         batch.update(storeRef, { creditBalance: increment(-orderData.creditUsed) });
@@ -361,6 +396,7 @@ const StoreDetails = () => {
 
       await batch.commit();
       setShowSaleModal(false);
+      setEditingOrder(null); // Clear editing state
       fetchSaleOrders();
       fetchPayments();
       fetchStore();
@@ -379,15 +415,35 @@ const StoreDetails = () => {
   const handleSavePayment = async () => {
     try {
       setIsSaving(true);
+
+      let upiUrl = "";
+      if (payFormData.method === 'UPI' && parseFloat(payFormData.amount) > 0) {
+        if (!editPaymentImage && !editingPayment.upiImage) {
+          alert("Please upload UPI payment screenshot.");
+          setIsSaving(false);
+          return;
+        }
+        
+        if (editPaymentImage) {
+          console.log("Uploading new screenshot for edited payment...");
+          const compressed = await compressImage(editPaymentImage);
+          upiUrl = await uploadToImageKit(compressed, `edit_upi_${id}_${Date.now()}.jpg`);
+          console.log("Edit UPI Upload Success:", upiUrl);
+        }
+      }
+
       const batch = writeBatch(db);
       
       // Update Payment
       const payRef = doc(db, `stores/${id}/payments`, editingPayment.id);
-      batch.update(payRef, {
+      const updateData = {
         ...payFormData,
         amount: parseFloat(payFormData.amount),
         updatedAt: serverTimestamp()
-      });
+      };
+      if (upiUrl) updateData.upiImage = upiUrl;
+
+      batch.update(payRef, updateData);
 
       // If status is changed to Confirmed, update order paidAmount
       if (payFormData.status === 'Confirmed' && editingPayment.orderId) {
@@ -532,8 +588,10 @@ const StoreDetails = () => {
 
     try {
       setIsSaving(true);
+      console.log("Capturing return signature...");
       const compressedSig = await compressImage(returnSignature);
       const sigUrl = await uploadToImageKit(compressedSig, `sig_${id}_${Date.now()}.jpg`);
+      console.log("Signature Upload Success:", sigUrl);
 
       const batch = writeBatch(db);
       const returnTotal = activeReturns.reduce((acc, curr) => acc + (curr.price * curr.returnQty), 0);
@@ -662,6 +720,7 @@ const StoreDetails = () => {
                           <th>Payable</th>
                           <th>Paid</th>
                           <th>Status</th>
+                          <th>Proof</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
@@ -679,6 +738,13 @@ const StoreDetails = () => {
                             <td>₹{order.netPayable || order.grandTotal}</td>
                             <td>₹{order.paidAmount || 0}</td>
                             <td><span className={`status-tag ${order.paymentStatus.toLowerCase()}`}>{order.paymentStatus}</span></td>
+                            <td>
+                               {order.upiImage ? (
+                                 <a href={order.upiImage} target="_blank" rel="noreferrer" className="proof-link-text">
+                                   View UPI
+                                 </a>
+                               ) : '-'}
+                             </td>
                             <td>
                               <div className="table-actions">
                                 <button className="btn-icon" onClick={() => startEditOrder(order)} title="Edit Order"><Pencil size={16}/></button>
@@ -1368,6 +1434,15 @@ const StoreDetails = () => {
              <div className="modal-form p-20">
                 <div className="form-group"><label>Amount (₹)</label><input type="number" value={payFormData.amount} onChange={(e) => setPayFormData({...payFormData, amount: e.target.value})}/></div>
                 <div className="form-group"><label>Method</label><select value={payFormData.method} onChange={(e) => setPayFormData({...payFormData, method: e.target.value})}><option value="Cash">Cash</option><option value="UPI">UPI</option></select></div>
+                {payFormData.method === 'UPI' && (
+                  <div className="image-upload-zone mt-12 mb-20">
+                     <label className="upload-label">
+                       {(editPaymentImage || editingPayment?.upiImage) ? <CheckCircle2 size={18} color="#10b981"/> : <Camera size={18}/>}
+                       <span>{(editPaymentImage || editingPayment?.upiImage) ? 'Proof Available' : 'Upload UPI Screenshot'}</span>
+                       <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => setEditPaymentImage(e.target.files[0])}/>
+                     </label>
+                  </div>
+                )}
                 <div className="form-group"><label>Status</label><select value={payFormData.status} onChange={(e) => setPayFormData({...payFormData, status: e.target.value})}><option value="Awaiting Confirmation">Awaiting Confirmation</option><option value="Confirmed">Confirmed</option><option value="Failed">Failed</option></select></div>
                 <div className="modal-footer"><button className="btn-primary w-100" onClick={handleSavePayment} disabled={isSaving}>{isSaving ? <Loader2 className="animate-spin"/> : 'Update Payment'}</button></div>
              </div>
