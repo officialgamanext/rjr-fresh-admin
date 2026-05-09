@@ -49,7 +49,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {tableData.map((row, index) => (
+                {proposals.map((row, index) => (
                   <tr key={index}>
                     <td><input type="checkbox" /></td>
                     <td className="proposal-id">{row.id}</td>
