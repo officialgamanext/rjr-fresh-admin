@@ -68,6 +68,7 @@ const StoreDetails = () => {
   const [returnOrders, setReturnOrders] = useState([]);
   const [creditHistory, setCreditHistory] = useState([]);
   const [creditBalance, setCreditBalance] = useState(0);
+  const [checkins, setCheckins] = useState([]);
 
   // Info Tab Edit State
   const [isEditing, setIsEditing] = useState(false);
@@ -129,6 +130,7 @@ const StoreDetails = () => {
     if (activeTab === 'payments') fetchPayments();
     if (activeTab === 'returns') fetchReturnOrders();
     if (activeTab === 'credits') fetchCreditData();
+    if (activeTab === 'checkins') fetchCheckins();
   }, [activeTab]);
 
   const fetchStore = async () => {
@@ -203,6 +205,19 @@ const StoreDetails = () => {
       const hist = [];
       snapshot.forEach(doc => hist.push({ id: doc.id, ...doc.data() }));
       setCreditHistory(hist);
+    } catch (error) {}
+  };
+
+  const fetchCheckins = async () => {
+    try {
+      const q = query(collection(db, "checkins"), orderBy('timestamp', 'desc'));
+      const snapshot = await getDocs(q);
+      const list = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.shopId === id) list.push({ id: doc.id, ...data });
+      });
+      setCheckins(list);
     } catch (error) {}
   };
 
@@ -570,7 +585,7 @@ const StoreDetails = () => {
                         {saleOrders.map(order => (
                           <tr key={order.id}>
                             <td><span className="order-id-cell">#{order.id.slice(0,6).toUpperCase()}</span></td>
-                            <td>{order.createdAt?.toDate().toLocaleDateString()}</td>
+                            <td>{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : '...'}</td>
                             <td>{order.items.length} Items</td>
                             <td>₹{order.subtotal || 0}</td>
                             <td>₹{order.discount || 0}</td>
@@ -612,7 +627,7 @@ const StoreDetails = () => {
                           {payments.map(pm => (
                             <tr key={pm.id}>
                               <td><span className="order-id-cell">#{pm.id.slice(0,6).toUpperCase()}</span></td>
-                              <td>{pm.createdAt?.toDate().toLocaleDateString()}</td>
+                              <td>{pm.createdAt?.toDate ? pm.createdAt.toDate().toLocaleDateString() : '...'}</td>
                               <td>₹{pm.amount}</td>
                               <td><span className="method-tag">{pm.method === 'Cash' ? <Banknote size={16}/> : <Smartphone size={16}/>} {pm.method}</span></td>
                               <td><span className="status-badge awaiting">{pm.status}</span></td>
@@ -895,7 +910,7 @@ const StoreDetails = () => {
                       <tbody>
                         {creditHistory.map(hist => (
                           <tr key={hist.id}>
-                            <td>{hist.createdAt?.toDate().toLocaleDateString()}</td>
+                            <td>{hist.createdAt?.toDate ? hist.createdAt.toDate().toLocaleDateString() : '...'}</td>
                             <td><span className={`status-tag ${hist.type === 'Credit' ? 'paid' : 'unpaid'}`}>{hist.type}</span></td>
                             <td>{hist.description}</td>
                             <td className={hist.type === 'Credit' ? 'text-success' : 'text-danger'}>
@@ -913,13 +928,48 @@ const StoreDetails = () => {
         )}
 
         {activeTab === 'checkins' && (
-          <div className="placeholder-tab">
-            <div className="no-data">
-              <MapPin size={48}/>
-              <p>Store Check-ins module is coming soon.</p>
-            </div>
-          </div>
-        )}
+           <div className="checkins-tab-container">
+             <div className="tab-header"><h3>Store Check-in History</h3></div>
+             <div className="checkins-list">
+                {checkins.length === 0 ? <p className="no-data">No check-ins recorded for this store.</p> : (
+                  <div className="data-table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Date & Time</th>
+                          <th>Employee</th>
+                          <th>Location</th>
+                          <th>Distance</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {checkins.map(ci => (
+                          <tr key={ci.id}>
+                            <td>
+                              <div className="ci-datetime">
+                                <p className="ci-date">{ci.date}</p>
+                                <p className="ci-time" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{ci.time}</p>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="ci-emp">
+                                <p className="emp-name" style={{ fontWeight: '600' }}>{ci.employeeName}</p>
+                                <p className="emp-user" style={{ fontSize: '12px', color: 'var(--primary-color)' }}>@{ci.username}</p>
+                              </div>
+                            </td>
+                            <td>{ci.locationName}</td>
+                            <td>{ci.distance}m</td>
+                            <td><span className={`status-tag ${ci.status.toLowerCase()}`}>{ci.status}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+             </div>
+           </div>
+         )}
       </div>
 
       {/* RETURN ORDER MODAL */}
