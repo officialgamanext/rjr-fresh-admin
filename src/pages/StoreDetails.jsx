@@ -582,12 +582,32 @@ const StoreDetails = () => {
                 <div className="items-selector">
                    <div className="search-box"><Search size={18}/><input type="text" placeholder="Search items..."/></div>
                    <div className="items-list-scroll">
-                      {items.map(item => (
-                        <div key={item.id} className="item-select-card" onClick={() => addToCart(item)}>
-                           <div className="item-info"><Package size={20}/><div><p className="name">{item.name}</p><p className="price">₹{storePrices[item.id]?.price || 0}</p></div></div>
-                           <Plus size={18}/>
-                        </div>
-                      ))}
+                      {items.map(item => {
+                        const cartItem = cart.find(c => c.itemId === item.id);
+                        const qty = cartItem ? cartItem.quantity : 0;
+                        return (
+                          <div key={item.id} className={`item-select-card ${qty > 0 ? 'selected' : ''}`} onClick={() => qty === 0 && addToCart(item)}>
+                             <div className="item-card-main">
+                                <div className="item-icon-wrapper"><Package size={20}/></div>
+                                <div className="item-card-info">
+                                   <p className="name">{item.name}</p>
+                                   <p className="price">₹{storePrices[item.id]?.price || 0}</p>
+                                </div>
+                             </div>
+                             <div className="item-card-actions" onClick={(e) => e.stopPropagation()}>
+                                {qty > 0 ? (
+                                  <div className="card-qty-selector">
+                                     <button onClick={() => updateQty(item.id, qty - 1)}>-</button>
+                                     <span>{qty}</span>
+                                     <button onClick={() => updateQty(item.id, qty + 1)}>+</button>
+                                  </div>
+                                ) : (
+                                  <button className="card-add-btn" onClick={() => addToCart(item)}><Plus size={16}/></button>
+                                )}
+                             </div>
+                          </div>
+                        );
+                      })}
                    </div>
                 </div>
                 <div className="order-summary-panel">
