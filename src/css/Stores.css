@@ -1642,3 +1642,169 @@ input:checked+.slider:before {
   .analytics-filters { flex-direction: column; }
   .analytics-metrics { grid-template-columns: 1fr 1fr; }
 }
+/* Image Upload & Signature Styles */
+.image-upload-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+  transition: all 0.2s;
+}
+
+.image-upload-zone:hover {
+  border-color: var(--primary-color);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.upload-label span {
+  flex: 1;
+}
+
+.signature-upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.signature-upload-btn:hover {
+  border-color: var(--primary-color);
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.sig-icon {
+  width: 48px;
+  height: 48px;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.sig-text .main {
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.sig-text .sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.btn-save-return {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save-return:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.return-summary-final .r-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.return-summary-final .r-row.grand {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-main);
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+/* Digital Signature Pad Styles */
+.sig-overlay {
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.signature-preview-box {
+  background: #f8fafc;
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.signature-preview-box img {
+  max-width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+  background: white;
+  border-radius: 8px;
+}
+
+.btn-redo-sig {
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.btn-redo-sig:hover {
+  background: #fff;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+.proof-link-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-decoration: none;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.proof-link-text:hover {
+  background: var(--primary-color);
+  color: white;
+}

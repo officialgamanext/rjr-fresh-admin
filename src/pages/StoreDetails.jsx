@@ -17,37 +17,40 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { 
-  ArrowLeft, 
   Store, 
   Phone, 
   MapPin, 
   Navigation, 
   Calendar, 
   Loader2, 
-  Edit3, 
-  Save, 
-  X,
-  Search,
-  ChevronDown,
-  Trash2,
-  Package,
-  IndianRupee,
   CheckCircle2,
   Plus,
   ShoppingCart,
   Receipt,
   Printer,
   CreditCard,
-  Banknote,
-  Smartphone,
-  ChevronRight,
-  Pencil,
-  ArrowRight,
-  History,
+  Camera,
+  Image as ImageIcon,
+  Upload,
   RotateCcw,
-  Wallet
+  Smartphone,
+  Banknote,
+  Wallet,
+  Pencil,
+  ChevronRight,
+  ArrowLeft,
+  ArrowRight,
+  Edit3,
+  X,
+  Search,
+  ChevronDown,
+  Trash2,
+  Package,
+  IndianRupee
 } from 'lucide-react';
+import { compressImage, uploadToImageKit } from '../utils/imageUpload';
 import { useLocation } from '../LocationContext';
+import SignaturePad from '../components/SignaturePad';
 import '../css/Stores.css';
 
 const StoreDetails = () => {
@@ -104,14 +107,19 @@ const StoreDetails = () => {
   // Payment Edit Form State
   const [payFormData, setPayFormData] = useState({ amount: 0, method: 'Cash', status: 'Awaiting Confirmation' });
 
+  const [paymentImage, setPaymentImage] = useState(null);
+  
   // Return Order Form State
   const [selectedOrderForReturn, setSelectedOrderForReturn] = useState(null);
   const [returnCart, setReturnCart] = useState([]);
+  const [returnSignature, setReturnSignature] = useState(null);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
 
   // Bulk Payment State
   const [showBulkPaymentModal, setShowBulkPaymentModal] = useState(false);
   const [bulkPaymentAmount, setBulkPaymentAmount] = useState(0);
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState('Cash');
+  const [bulkPaymentImage, setBulkPaymentImage] = useState(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState([]);
 
   // Print State
@@ -297,57 +305,58 @@ const StoreDetails = () => {
     try {
       setIsSaving(true);
       const batch = writeBatch(db);
+      const netPayable = grandTotal - (useCredit ? Math.min(creditBalance, grandTotal) : 0);
       
-      const creditAmount = useCredit ? Math.min(creditBalance, grandTotal) : 0;
-      const amountToPay = grandTotal - creditAmount;
+      let upiUrl = "";
+      if (paymentMethod === 'UPI' && paymentAmount > 0) {
+        if (!paymentImage) { alert("Please upload UPI payment screenshot."); return; }
+        const compressed = await compressImage(paymentImage);
+        upiUrl = await uploadToImageKit(compressed, `upi_${id}_${Date.now()}.jpg`);
+      }
 
+      // 1. Create Sale Order
+      const orderRef = doc(collection(db, `stores/${id}/sales`));
       const orderData = {
         items: cart,
         subtotal,
         discount,
-        useCredit,
-        creditUsed: creditAmount,
+        creditUsed: useCredit ? (creditBalance > grandTotal ? grandTotal : creditBalance) : 0,
         grandTotal,
-        netPayable: amountToPay,
-        paidAmount: paymentAmount > 0 ? parseFloat(paymentAmount) : 0,
-        paymentStatus: paymentAmount >= amountToPay ? 'Paid' : (paymentAmount > 0 ? 'Partial' : 'Unpaid'),
+        netPayable,
+        returnedValue: 0,
+        paidAmount: parseFloat(paymentAmount || 0),
+        paymentStatus: parseFloat(paymentAmount || 0) >= netPayable ? 'Paid' : (parseFloat(paymentAmount || 0) > 0 ? 'Partial' : 'Unpaid'),
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        useCredit
       };
+      batch.set(orderRef, orderData);
 
-      let orderRef;
-      if (editingOrder) {
-        orderRef = doc(db, `stores/${id}/sales`, editingOrder.id);
-        batch.update(orderRef, orderData);
-      } else {
-        orderRef = doc(collection(db, `stores/${id}/sales`));
-        batch.set(orderRef, { ...orderData, createdAt: serverTimestamp() });
+      // 2. Save Initial Payment if any
+      if (paymentAmount > 0) {
+        const payRef = doc(collection(db, `stores/${id}/payments`));
+        batch.set(payRef, {
+          amount: parseFloat(paymentAmount),
+          method: paymentMethod,
+          status: 'Confirmed',
+          orderId: orderRef.id,
+          upiImage: upiUrl,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      if (useCredit && orderData.creditUsed > 0) {
+        const storeRef = doc(db, "stores", id);
+        batch.update(storeRef, { creditBalance: increment(-orderData.creditUsed) });
         
-        if (paymentAmount > 0) {
-          const payRef = doc(collection(db, `stores/${id}/payments`));
-          batch.set(payRef, {
-            orderId: orderRef.id,
-            amount: parseFloat(paymentAmount),
-            method: paymentMethod,
-            status: 'Confirmed', // If saved from order modal, usually it's confirmed
-            createdAt: serverTimestamp(),
-            items: cart,
-            grandTotal: grandTotal
-          });
-        }
-
-        if (useCredit && creditAmount > 0) {
-          const storeRef = doc(db, "stores", id);
-          batch.update(storeRef, { creditBalance: increment(-creditAmount) });
-          
-          const histRef = doc(collection(db, `stores/${id}/creditHistory`));
-          batch.set(histRef, {
-            type: 'Usage',
-            amount: creditAmount,
-            orderId: orderRef.id,
-            description: `Used for Order #${orderRef.id.slice(0,6).toUpperCase()}`,
-            createdAt: serverTimestamp()
-          });
-        }
+        const histRef = doc(collection(db, `stores/${id}/creditHistory`));
+        batch.set(histRef, {
+          type: 'Usage',
+          amount: orderData.creditUsed,
+          orderId: orderRef.id,
+          description: `Used for Order #${orderRef.id.slice(0,6).toUpperCase()}`,
+          createdAt: serverTimestamp()
+        });
       }
 
       await batch.commit();
@@ -442,6 +451,14 @@ const StoreDetails = () => {
     if (bulkPaymentAmount <= 0) return;
     try {
       setIsSaving(true);
+
+      let upiUrl = "";
+      if (bulkPaymentMethod === 'UPI' && parseFloat(bulkPaymentAmount) > 0) {
+        if (!bulkPaymentImage) { alert("Please upload UPI payment screenshot."); setIsSaving(false); return; }
+        const compressed = await compressImage(bulkPaymentImage);
+        upiUrl = await uploadToImageKit(compressed, `bulk_upi_${id}_${Date.now()}.jpg`);
+      }
+
       const batch = writeBatch(db);
       let remaining = parseFloat(bulkPaymentAmount);
 
@@ -455,6 +472,7 @@ const StoreDetails = () => {
         amount: parseFloat(bulkPaymentAmount),
         method: bulkPaymentMethod,
         status: 'Awaiting Confirmation',
+        upiImage: upiUrl,
         createdAt: serverTimestamp(),
         type: 'Bulk'
       });
@@ -510,9 +528,13 @@ const StoreDetails = () => {
   const handleSaveReturn = async () => {
     const activeReturns = returnCart.filter(it => it.returnQty > 0);
     if (activeReturns.length === 0) return;
+    if (!returnSignature) { alert("Signature is mandatory for returns."); return; }
 
     try {
       setIsSaving(true);
+      const compressedSig = await compressImage(returnSignature);
+      const sigUrl = await uploadToImageKit(compressedSig, `sig_${id}_${Date.now()}.jpg`);
+
       const batch = writeBatch(db);
       const returnTotal = activeReturns.reduce((acc, curr) => acc + (curr.price * curr.returnQty), 0);
 
@@ -521,6 +543,7 @@ const StoreDetails = () => {
         orderId: selectedOrderForReturn.id,
         items: activeReturns,
         totalAmount: returnTotal,
+        signature: sigUrl,
         createdAt: serverTimestamp()
       });
 
@@ -690,7 +713,17 @@ const StoreDetails = () => {
                               <td><span className="order-id-cell">#{pm.id.slice(0,6).toUpperCase()}</span></td>
                               <td>{pm.createdAt?.toDate ? pm.createdAt.toDate().toLocaleDateString() : '...'}</td>
                               <td>₹{pm.amount}</td>
-                              <td><span className="method-tag">{pm.method === 'Cash' ? <Banknote size={16}/> : <Smartphone size={16}/>} {pm.method}</span></td>
+                              <td>
+                                 <span className="method-tag">
+                                   {pm.method === 'Cash' ? <Banknote size={16}/> : <Smartphone size={16}/>} 
+                                   {pm.method}
+                                   {pm.upiImage && (
+                                     <a href={pm.upiImage} target="_blank" rel="noreferrer" className="ml-8" style={{ display: 'flex', color: 'var(--primary-color)' }} title="View UPI Proof">
+                                       <ImageIcon size={14}/>
+                                     </a>
+                                   )}
+                                 </span>
+                               </td>
                               <td><span className="status-badge awaiting">{pm.status}</span></td>
                               <td>
                                 <div className="table-actions">
@@ -924,7 +957,7 @@ const StoreDetails = () => {
                {returnOrders.length === 0 ? <p className="no-data">No returns recorded yet.</p> : (
                  <div className="data-table-wrapper">
                     <table className="data-table">
-                      <thead><tr><th>Return ID</th><th>Sale Ref</th><th>Date</th><th>Items</th><th>Value</th><th>Actions</th></tr></thead>
+                      <thead><tr><th>Return ID</th><th>Sale Ref</th><th>Date</th><th>Items</th><th>Value</th><th>Proof</th><th>Actions</th></tr></thead>
                       <tbody>
                         {returnOrders.map(ret => (
                           <tr key={ret.id}>
@@ -934,11 +967,18 @@ const StoreDetails = () => {
                             <td>{ret.items.length} Items</td>
                             <td>₹{ret.totalAmount}</td>
                             <td>
-                              <div className="table-actions">
-                                <button className="btn-icon" onClick={() => handlePrint(ret)} title="Print Return Slip"><Printer size={16}/></button>
-                                <button className="btn-icon delete" onClick={() => { if(window.confirm('Delete this return?')) deleteDoc(doc(db, `stores/${id}/returns`, ret.id)).then(fetchReturnOrders); }}><Trash2 size={16}/></button>
-                              </div>
+                              {ret.signature ? (
+                                <a href={ret.signature} target="_blank" rel="noreferrer" className="proof-link-text">
+                                  View Signature
+                                </a>
+                              ) : <span className="text-muted">No Sig</span>}
                             </td>
+                            <td>
+                               <div className="table-actions">
+                                 <button className="btn-icon" onClick={() => handlePrint(ret)} title="Print Return Slip"><Printer size={16}/></button>
+                                 <button className="btn-icon delete" onClick={() => { if(window.confirm('Delete this return?')) deleteDoc(doc(db, `stores/${id}/returns`, ret.id)).then(fetchReturnOrders); }}><Trash2 size={16}/></button>
+                               </div>
+                             </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1081,15 +1121,43 @@ const StoreDetails = () => {
                       </div>
                     </div>
                   ))}
-                </div>
-                
-                <div className="return-footer mt-24">
-                  <div className="return-summary">
-                    <p>Total Return Value: <strong>₹{returnCart.reduce((acc, curr) => acc + (curr.price * curr.returnQty), 0)}</strong></p>
+                  <div className="return-footer mt-24">
+                  <div className="signature-section mb-20">
+                    {returnSignature ? (
+                      <div className="signature-preview-box">
+                        <img src={URL.createObjectURL(returnSignature)} alt="Signature" />
+                        <button className="btn-redo-sig" onClick={() => { setReturnSignature(null); setShowSignaturePad(true); }}>
+                          <RotateCcw size={14}/> Redo Signature
+                        </button>
+                      </div>
+                    ) : (
+                      <button className="signature-upload-btn" onClick={() => setShowSignaturePad(true)}>
+                        <div className="sig-icon"><Edit3 size={24}/></div>
+                        <div className="sig-text">
+                          <p className="main">Tap to Sign</p>
+                          <p className="sub">Digital Signature Required</p>
+                        </div>
+                      </button>
+                    )}
                   </div>
-                  <button className="btn-primary w-100 mt-16" onClick={handleSaveReturn} disabled={isSaving || returnCart.reduce((acc, curr) => acc + curr.returnQty, 0) === 0}>
-                    {isSaving ? <Loader2 className="animate-spin"/> : 'Complete Return & Add Credit'}
+
+                  {showSignaturePad && (
+                    <div className="modal-overlay sig-overlay">
+                      <SignaturePad 
+                        onSave={(blob) => { setReturnSignature(blob); setShowSignaturePad(false); }}
+                        onCancel={() => setShowSignaturePad(false)}
+                      />
+                    </div>
+                  )}
+
+                  <div className="return-summary-final mb-20">
+                    <div className="r-row"><span>Total Items</span><span>{returnCart.reduce((acc,it)=>acc+it.returnQty, 0)}</span></div>
+                    <div className="r-row grand"><span>Return Value</span><span>₹{returnCart.reduce((acc,curr) => acc + (curr.price * curr.returnQty), 0).toFixed(2)}</span></div>
+                  </div>
+                  <button className="btn-save-return" disabled={isSaving || returnCart.reduce((acc,it)=>acc+it.returnQty, 0) === 0} onClick={handleSaveReturn}>
+                    {isSaving ? <Loader2 className="animate-spin"/> : <RotateCcw size={18}/>} Confirm Return
                   </button>
+                </div>
                 </div>
               </div>
             )}
@@ -1171,6 +1239,15 @@ const StoreDetails = () => {
                            <input type="number" placeholder="Amount" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}/>
                            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}><option value="Cash">Cash</option><option value="UPI">UPI</option></select>
                         </div>
+                        {paymentMethod === 'UPI' && (
+                           <div className="image-upload-zone mt-12">
+                              <label className="upload-label">
+                                {paymentImage ? <CheckCircle2 size={18} color="#10b981"/> : <Camera size={18}/>}
+                                <span>{paymentImage ? 'Screenshot Uploaded' : 'Upload UPI Screenshot'}</span>
+                                <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => setPaymentImage(e.target.files[0])}/>
+                              </label>
+                           </div>
+                        )}
                      </div>
                    )}
                    <button className="btn-place-order" onClick={handleSaveOrder} disabled={isSaving || cart.length === 0}>
@@ -1216,6 +1293,16 @@ const StoreDetails = () => {
                   <option value="UPI">UPI</option>
                 </select>
               </div>
+
+              {bulkPaymentMethod === 'UPI' && (
+                <div className="image-upload-zone mt-12 mb-20">
+                   <label className="upload-label">
+                     {bulkPaymentImage ? <CheckCircle2 size={18} color="#10b981"/> : <Camera size={18}/>}
+                     <span>{bulkPaymentImage ? 'Screenshot Uploaded' : 'Upload UPI Screenshot'}</span>
+                     <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => setBulkPaymentImage(e.target.files[0])}/>
+                   </label>
+                </div>
+              )}
 
               <div className="allocation-preview mt-20">
                 <p className="section-subtitle">Select Orders to Pay (FIFO)</p>
