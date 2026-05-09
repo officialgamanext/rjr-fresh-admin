@@ -69,6 +69,10 @@ const StoreDetails = () => {
   const [creditHistory, setCreditHistory] = useState([]);
   const [creditBalance, setCreditBalance] = useState(0);
   const [checkins, setCheckins] = useState([]);
+  
+  // Analytics State
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Info Tab Edit State
   const [isEditing, setIsEditing] = useState(false);
@@ -123,15 +127,40 @@ const StoreDetails = () => {
     { id: 'checkins', label: 'Checkins' }
   ];
 
-  useEffect(() => { fetchStore(); }, [id]);
+  useEffect(() => { fetchStore(); fetchSaleOrders(); }, [id]);
   useEffect(() => {
     if (activeTab === 'prices') fetchItemsAndPrices();
-    if (activeTab === 'sales' || activeTab === 'returns') fetchSaleOrders();
     if (activeTab === 'payments') fetchPayments();
     if (activeTab === 'returns') fetchReturnOrders();
     if (activeTab === 'credits') fetchCreditData();
     if (activeTab === 'checkins') fetchCheckins();
   }, [activeTab]);
+
+  const getAnalytics = () => {
+    let filteredOrders = [...saleOrders];
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+
+      filteredOrders = saleOrders.filter(o => {
+        if (!o.createdAt?.toDate) return false;
+        const d = o.createdAt.toDate();
+        return d >= start && d <= end;
+      });
+    }
+
+    const totalSales = filteredOrders.reduce((acc, o) => acc + (o.subtotal || (o.grandTotal + (o.returnedValue || 0))), 0);
+    const totalReturn = filteredOrders.reduce((acc, o) => acc + (o.returnedValue || 0), 0);
+    const finalSales = totalSales - totalReturn;
+
+    const amountDue = saleOrders.reduce((acc, o) => acc + ((o.netPayable || o.grandTotal) - (o.paidAmount || 0)), 0);
+
+    return { totalSales, totalReturn, finalSales, amountDue };
+  };
+
+  const analytics = getAnalytics();
 
   const fetchStore = async () => {
     try {
@@ -549,6 +578,38 @@ const StoreDetails = () => {
           <div><h2 className="page-title">{store.name}</h2><p className="breadcrumb">Stores / {store.name}</p></div>
         </div>
         <div className={`status-badge-lg ${store.status.toLowerCase()}`}>{store.status}</div>
+      </div>
+
+      <div className="store-analytics-bar">
+        <div className="analytics-filters">
+          <div className="filter-group">
+            <label>From</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div className="filter-group">
+            <label>To</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+        </div>
+        
+        <div className="analytics-metrics">
+          <div className="metric-card">
+            <span className="m-label">Total Sales</span>
+            <span className="m-value">₹{analytics.totalSales.toFixed(2)}</span>
+          </div>
+          <div className="metric-card return">
+            <span className="m-label">Returns</span>
+            <span className="m-value">₹{analytics.totalReturn.toFixed(2)}</span>
+          </div>
+          <div className="metric-card final">
+            <span className="m-label">Final Sales</span>
+            <span className="m-value">₹{analytics.finalSales.toFixed(2)}</span>
+          </div>
+          <div className="metric-card due">
+            <span className="m-label">Total Due</span>
+            <span className="m-value text-danger">₹{analytics.amountDue.toFixed(2)}</span>
+          </div>
+        </div>
       </div>
 
       <div className="tabs-navigation">

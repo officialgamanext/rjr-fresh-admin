@@ -1567,3 +1567,78 @@ input:checked+.slider:before {
 
 .text-danger { color: #ef4444 !important; }
 .text-success { color: #10b981 !important; }
+.store-analytics-bar {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analytics-filters {
+  display: flex;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.filter-group input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-family: inherit;
+  outline: none;
+}
+
+.analytics-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.metric-card .m-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.metric-card .m-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.metric-card.return .m-value { color: #f43f5e; }
+.metric-card.final .m-value { color: var(--primary-color); }
+.metric-card.due .m-value { color: #ef4444; }
+
+@media (max-width: 768px) {
+  .analytics-filters { flex-direction: column; }
+  .analytics-metrics { grid-template-columns: 1fr 1fr; }
+}
