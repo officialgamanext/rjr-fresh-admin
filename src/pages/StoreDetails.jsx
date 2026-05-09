@@ -869,7 +869,7 @@ const StoreDetails = () => {
                           <tr key={ret.id}>
                             <td><span className="order-id-cell">#{ret.id.slice(0,6).toUpperCase()}</span></td>
                             <td><span className="order-id-cell">#{ret.orderId.slice(0,6).toUpperCase()}</span></td>
-                            <td>{ret.createdAt?.toDate().toLocaleDateString()}</td>
+                            <td>{ret.createdAt?.toDate ? ret.createdAt.toDate().toLocaleDateString() : '...'}</td>
                             <td>{ret.items.length} Items</td>
                             <td>₹{ret.totalAmount}</td>
                             <td>
